@@ -105,8 +105,21 @@
 .dangerMiniBtn:hover{background:#fecaca!important;}
 
 
-/* V35.1 - déplacement des colonnes */
+/* V36 - interface compacte et déplacements avancés */
 .colDragHandle{border:0;background:#dbeafe;color:#1d4ed8;border-radius:8px;padding:4px 7px;cursor:grab;font-weight:900}
 .colDragHandle:active{cursor:grabbing}
 .bucket.columnDragover{outline:3px dashed #2563eb;outline-offset:4px}
 .webOriginBox code{display:block;background:#f1f5f9;border:1px solid #cbd5e1;border-radius:8px;padding:8px;word-break:break-all;color:#0f172a}
+
+
+/* V36 - bandeau haut compact */
+.topbar{padding:8px 16px!important;min-height:86px!important;align-items:center!important}
+.planTitle{font-size:22px!important;width:320px!important}
+.topbar p{font-size:13px!important;margin-top:2px!important}
+.topActions input{padding:8px!important;height:36px!important}
+.topActions select,.topActions button{padding:8px 10px!important}
+.topMiniBtn{padding:7px 10px!important;min-height:34px!important}
+.board{height:calc(100vh - 108px)!important}
+.groupBox.columnDragover{outline:3px dashed #2563eb;outline-offset:4px;background:#eff6ff!important}
+.groupTask{cursor:grab}
+.groupTask:active{cursor:grabbing}

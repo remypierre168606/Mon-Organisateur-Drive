@@ -50,3 +50,10 @@ V35.2 : CORRECTION
 - URI de redirection forcée à la racine du site : https://ton-site.netlify.app/
 - Le fichier app.js doit contenir VERSION_LABEL = V35.2
 - index.html doit charger app.js?v=352
+
+
+V36 : nouvelles fonctions
+- Bandeau du haut plus compact.
+- Glisser une tâche entre les groupes Responsable, Entreprise et Priorité.
+- Bouton Ouvrir ajouté dans la vue Priorité.
+- Dans une tâche, choisir un autre plan pour déplacer la tâche.

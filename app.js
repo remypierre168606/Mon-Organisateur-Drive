@@ -273,12 +273,29 @@ function taskRowForGroup(t, field){
   </div>`;
 }
 function attachGroupTaskClicks(root){
-  root.querySelectorAll('.groupTask').forEach(el=>el.onclick=()=>{
-    db.activePlan=Number(el.dataset.plan);
-    render();
-    openTask(el.dataset.id);
+  root.querySelectorAll('.groupTask').forEach(el=>{
+    el.draggable=true;
+    el.ondragstart=(e)=>{ drag=e.currentTarget.dataset.id; e.dataTransfer.effectAllowed='move'; };
+    el.onclick=()=>{ db.activePlan=Number(el.dataset.plan); render(); openTask(el.dataset.id); };
   });
 }
+function attachGroupDrop(root, field){
+  root.querySelectorAll('.groupBox[data-value]').forEach(box=>{
+    box.ondragover=e=>{e.preventDefault();box.classList.add('columnDragover')};
+    box.ondragleave=()=>box.classList.remove('columnDragover');
+    box.ondrop=e=>{
+      e.preventDefault();box.classList.remove('columnDragover');
+      const id=drag; drag=null;
+      const found=findTaskGlobal(id); if(!found.t) return;
+      const value=decodeURIComponent(box.dataset.value||'');
+      if(field==='assignee') found.t.assignee=(value==='Aucun responsable')?'':value;
+      if(field==='company') found.t.company=(value==='Aucune entreprise')?'':value;
+      if(field==='priority') found.t.priority=value;
+      render();
+    };
+  });
+}
+
 function renderGroupedView(field){
   const root=$(field==='assignee'?'assigneesView':'companiesView');
   const title=field==='assignee'?'Classement par responsable':'Classement par entreprise';
@@ -295,7 +312,7 @@ function renderGroupedView(field){
   tasks.forEach(t=>{const k=groupKeyValue(t,field); (groups[k] ||= []).push(t);});
   const entries=Object.entries(groups);
   root.innerHTML=`<div class="groupHeader"><h2>${icon} ${esc(title)}</h2><p>Vue globale : toutes les tâches de tous les plans. Clique sur <strong>Ouvrir</strong> pour afficher une page dédiée.</p></div>`+
-    (entries.length?`<div class="groupGrid">${entries.map(([name,items])=>`<section class="groupBox">
+    (entries.length?`<div class="groupGrid">${entries.map(([name,items])=>`<section class="groupBox" data-value="${encodeURIComponent(name)}">
       <h3><span>${esc(name)} <span class="count">${items.length}</span></span><button class="openGroupBtn" data-field="${field}" data-name="${encodeURIComponent(name)}">Ouvrir</button></h3>
       <div class="groupTasks">${items.slice(0,6).map(t=>taskRowForGroup(t,field)).join('')}${items.length>6?`<div class="small">+ ${items.length-6} tâche(s) dans la page dédiée</div>`:''}</div>
     </section>`).join('')}</div>`:`<p>Aucune tâche trouvée pour ${esc(empty.toLowerCase())}.</p>`);
@@ -304,6 +321,7 @@ function renderGroupedView(field){
     renderGroupDetail(field,decodeURIComponent(btn.dataset.name));
   });
   attachGroupTaskClicks(root);
+  attachGroupDrop(root, field);
 }
 function renderGroupDetail(field, name){
   const root=$(field==='assignee'?'assigneesView':'companiesView');
@@ -340,11 +358,30 @@ function renderPriorityView(){
   });
   const groups={urgent:[],high:[],normal:[],low:[]};
   tasks.forEach(t=>{const k=groups[t.priority]?t.priority:'normal'; groups[k].push(t);});
-  root.innerHTML=`<div class="groupHeader"><h2>📌 Classement par priorité</h2><p>Vue globale : toutes les tâches de tous les plans, classées par priorité.</p></div>
-    <div class="groupGrid priorityGrid">${order.map(k=>`<section class="groupBox priorityBox priority-${k}">
-      <h3><span>${priorityGroupLabel(k)} <span class="count">${groups[k].length}</span></span></h3>
+  root.innerHTML=`<div class="groupHeader"><h2>📌 Classement par priorité</h2><p>Vue globale : toutes les tâches de tous les plans, classées par priorité. Tu peux faire glisser une tâche vers une autre priorité.</p></div>
+    <div class="groupGrid priorityGrid">${order.map(k=>`<section class="groupBox priorityBox priority-${k}" data-value="${k}">
+      <h3><span>${priorityGroupLabel(k)} <span class="count">${groups[k].length}</span></span><button class="openPriorityBtn openGroupBtn" data-priority="${k}">Ouvrir</button></h3>
       <div class="groupTasks">${groups[k].length?groups[k].map(t=>taskRowForPriority(t)).join(''):'<p class="small">Aucune tâche.</p>'}</div>
     </section>`).join('')}</div>`;
+  root.querySelectorAll('.openPriorityBtn').forEach(btn=>btn.onclick=(e)=>{e.stopPropagation();renderPriorityDetail(btn.dataset.priority);});
+  attachGroupTaskClicks(root);
+  attachGroupDrop(root, 'priority');
+}
+function renderPriorityDetail(priority){
+  const root=$('prioritiesView');
+  const tasks=allPlanTasks().filter(t=>(t.priority||'normal')===priority).filter(pass).sort((a,b)=>{
+    const pa=(a.plan?.title||'').localeCompare(b.plan?.title||'','fr');
+    if(pa) return pa;
+    const da=(a.dueDate||'9999-99-99').localeCompare(b.dueDate||'9999-99-99');
+    if(da) return da;
+    return (a.title||'').localeCompare(b.title||'','fr');
+  });
+  root.innerHTML=`<div class="groupHeader detailHeader">
+    <button id="backPriorityBtn" class="backBtn">← Retour</button>
+    <div><h2>📌 Priorité : ${priorityGroupLabel(priority)}</h2><p>${tasks.length} tâche(s) trouvée(s) dans tous les plans.</p></div>
+  </div>
+  <div class="detailTaskList">${tasks.length?tasks.map(t=>taskRowForPriority(t)).join(''):`<p>Aucune tâche.</p>`}</div>`;
+  $('backPriorityBtn').onclick=()=>renderPriorityView();
   attachGroupTaskClicks(root);
 }
 function taskRowForPriority(t){
@@ -392,9 +429,50 @@ function openDeletePlanDialog(index){
   $('deletePlanDialog').showModal();
 }
 
-function openTask(id,bid){const {t,b}=id?findTask(id):{};$('dialogTitle').textContent=id?'Modifier la tâche':'Nouvelle tâche';$('taskId').value=id||'';$('taskTitle').value=t?.title||'';$('taskNotes').value=t?.notes||'';$('taskAssignee').innerHTML=assigneeOptions(t?.assignee||'');$('taskCompany').innerHTML=companyOptions(t?.company||'');$('taskDueDate').value=t?.dueDate||'';$('taskPriority').value=t?.priority||'normal';$('taskProgress').value=t?.progress||'todo';$('taskLinkName').value=(t?.linkName||t?.links?.[0]?.name||'');$('taskLinkUrl').value=(t?.linkUrl||t?.links?.[0]?.url||'');$('taskBucket').innerHTML=plan().buckets.map(bb=>`<option value="${bb.id}">${esc(bb.title)}</option>`).join('');$('taskBucket').value=(b||plan().buckets.find(x=>x.id===bid)||plan().buckets[0]).id;$('deleteTaskBtn').style.visibility=id?'visible':'hidden';$('taskDialog').showModal()}
+function findTaskGlobal(id){
+  for(let pi=0; pi<db.plans.length; pi++){
+    const p=db.plans[pi];
+    for(const b of (p.buckets||[])){
+      const t=(b.tasks||[]).find(x=>x.id===id);
+      if(t) return {t,b,plan:p,planIndex:pi};
+    }
+  }
+  return {};
+}
+function openTask(id,bid){
+  const found=id?findTaskGlobal(id):{};
+  const t=found.t, b=found.b;
+  $('dialogTitle').textContent=id?'Modifier la tâche':'Nouvelle tâche';
+  $('taskId').value=id||'';
+  $('taskTitle').value=t?.title||'';
+  $('taskNotes').value=t?.notes||'';
+  $('taskAssignee').innerHTML=assigneeOptions(t?.assignee||'');
+  $('taskCompany').innerHTML=companyOptions(t?.company||'');
+  $('taskDueDate').value=t?.dueDate||'';
+  $('taskPriority').value=t?.priority||'normal';
+  $('taskProgress').value=t?.progress||'todo';
+  $('taskLinkName').value=(t?.linkName||t?.links?.[0]?.name||'');
+  $('taskLinkUrl').value=(t?.linkUrl||t?.links?.[0]?.url||'');
+  const planSelect=$('taskPlan');
+  if(planSelect){
+    planSelect.innerHTML=db.plans.map((p,i)=>`<option value="${i}">${esc(p.title||('Plan '+(i+1)))}</option>`).join('');
+    planSelect.value=String(found.planIndex ?? db.activePlan);
+    planSelect.onchange=()=>updateTaskBucketOptions(Number(planSelect.value), b?.id || bid);
+    updateTaskBucketOptions(Number(planSelect.value), b?.id || bid);
+  }else{
+    $('taskBucket').innerHTML=plan().buckets.map(bb=>`<option value="${bb.id}">${esc(bb.title)}</option>`).join('');
+  }
+  $('deleteTaskBtn').style.visibility=id?'visible':'hidden';
+  $('taskDialog').showModal();
+}
+function updateTaskBucketOptions(planIndex, selectedBucketId=''){
+  const p=db.plans[planIndex]||plan();
+  $('taskBucket').innerHTML=(p.buckets||[]).map(bb=>`<option value="${bb.id}">${esc(bb.title)}</option>`).join('');
+  const exists=(p.buckets||[]).some(bb=>bb.id===selectedBucketId);
+  $('taskBucket').value=exists?selectedBucketId:(p.buckets?.[0]?.id||'');
+}
 function checklistFrom(txt){return txt.split('\n').map(s=>s.trim()).filter(Boolean).map(s=>({done:/^\[x\]/i.test(s),text:s.replace(/^\[x\]\s*/i,'')}))}
-$('taskForm').onsubmit=e=>{e.preventDefault();const id=$('taskId').value||uid();const old=findTask(id).t;const t={id,title:$('taskTitle').value.trim(),notes:$('taskNotes').value.trim(),assignee:$('taskAssignee').value.trim(),company:$('taskCompany').value.trim(),dueDate:$('taskDueDate').value,priority:$('taskPriority').value,progress:$('taskProgress').value,linkName:$('taskLinkName').value.trim(),linkUrl:$('taskLinkUrl').value.trim()};plan().buckets.forEach(b=>b.tasks=b.tasks.filter(x=>x.id!==id));const targetBucket=plan().buckets.find(b=>b.id===$('taskBucket').value); if(old){targetBucket.tasks.push(t)}else{targetBucket.tasks.unshift(t)}$('taskDialog').close();render()};
+$('taskForm').onsubmit=e=>{e.preventDefault();const id=$('taskId').value||uid();const found=findTaskGlobal(id);const old=found.t;const targetPlanIndex=$('taskPlan')?Number($('taskPlan').value):db.activePlan;const targetPlan=db.plans[targetPlanIndex]||plan();const t={id,title:$('taskTitle').value.trim(),notes:$('taskNotes').value.trim(),assignee:$('taskAssignee').value.trim(),company:$('taskCompany').value.trim(),dueDate:$('taskDueDate').value,priority:$('taskPriority').value,progress:$('taskProgress').value,linkName:$('taskLinkName').value.trim(),linkUrl:$('taskLinkUrl').value.trim()};db.plans.forEach(p=>(p.buckets||[]).forEach(b=>b.tasks=b.tasks.filter(x=>x.id!==id)));const targetBucket=(targetPlan.buckets||[]).find(b=>b.id===$('taskBucket').value)||targetPlan.buckets[0]; if(old){targetBucket.tasks.push(t)}else{targetBucket.tasks.unshift(t)}db.activePlan=targetPlanIndex;$('taskDialog').close();render()};
 $('deleteTaskBtn').onclick=()=>{const id=$('taskId').value;if(confirm('Supprimer cette tâche ?')){plan().buckets.forEach(b=>b.tasks=b.tasks.filter(t=>t.id!==id));$('taskDialog').close();render()}};
 $('cancelDialog').onclick=()=>$('taskDialog').close();
 $('cancelDeletePlanBtn').onclick=()=>$('deletePlanDialog').close();
@@ -414,7 +492,7 @@ $('planTitle').onchange=e=>{plan().title=e.target.value;render()};$('addBucketBt
 
 // ---------------- GOOGLE DRIVE SYNC ----------------
 
-const VERSION_LABEL = 'V35.2';
+const VERSION_LABEL = 'V36';
 let driveConnectedForBanner = false;
 let lastSaveTimeForBanner = localStorage.getItem('mon-organiseur-last-save-time') || '--';
 

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Mon Organiseur Drive V35.2</title>
+  <title>Mon Organiseur Drive V36</title>
   <link rel="stylesheet" href="style.css" />
   <style>
     .syncbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px}.syncbar button{padding:8px 10px;border-radius:10px;border:1px solid #d9dde8;background:#fff;cursor:pointer}.syncbar .primary{background:#2563eb;color:#fff;border-color:#2563eb}.syncStatus{font-size:12px;color:#475569}.setupBox{background:#fff7ed;border:1px solid #fed7aa;padding:10px;border-radius:12px;margin-top:10px}.setupBox input{width:min(520px,100%);padding:8px;border:1px solid #ddd;border-radius:8px}.hiddenSetup{display:none}.cloudBadge{font-size:12px;background:#e0f2fe;color:#075985;padding:4px 8px;border-radius:999px}
@@ -11,7 +11,7 @@
 </head>
 <body>
   <aside class="sidebar">
-    <div class="brand"><div class="logo">O</div><div><strong>Mon Organiseur</strong><span>version Drive V35.2</span></div></div>
+    <div class="brand"><div class="logo">O</div><div><strong>Mon Organiseur</strong><span>version Drive V36</span></div></div>
     <button class="nav active" data-view="settings">⚙️ Drive</button>
     <button class="nav" data-view="board">📋 Tableau</button>
     <button class="nav" data-view="list">☑️ Liste</button>
@@ -29,7 +29,7 @@
   </aside>
 
   <main class="app">
-    <div id="versionBanner" class="versionBanner">V35.2 | 🔴 Drive déconnecté | 💾 --</div>
+    <div id="versionBanner" class="versionBanner">V36 | 🔴 Drive déconnecté | 💾 --</div>
     <header class="topbar">
       <div>
         <input id="planTitle" class="planTitle" aria-label="Nom du plan">
@@ -75,7 +75,7 @@
           <code id="currentOriginText">--</code>
           <p><strong>URI de redirection :</strong></p>
           <code id="currentRedirectText">--</code>
-          <p class="small">Pour la V35.2, ajoute aussi l’URI de redirection ci-dessus dans Google Cloud.</p>
+          <p class="small">Pour la V36, ajoute aussi l’URI de redirection ci-dessus dans Google Cloud.</p>
         </div>
         <div class="settingsHelp">
           <h3>Utilisation simple</h3>
@@ -98,7 +98,7 @@
     <form id="taskForm" method="dialog">
       <h2 id="dialogTitle">Nouvelle tâche</h2><input type="hidden" id="taskId">
       <label>Titre<input id="taskTitle" required maxlength="100"></label>
-      <label>Colonne<select id="taskBucket"></select></label>
+      <div class="grid2"><label>Plan<select id="taskPlan"></select></label><label>Colonne<select id="taskBucket"></select></label></div>
       <label>Notes<textarea id="taskNotes" rows="4" placeholder="Détails de la tâche..."></textarea></label>
       <div class="grid2"><label>Responsable<select id="taskAssignee"></select></label><label>Entreprise<select id="taskCompany"></select></label></div>
       <label>Échéance<input id="taskDueDate" type="date"></label>
@@ -131,6 +131,6 @@
 
   <script src="https://accounts.google.com/gsi/client"></script>
   <script src="https://apis.google.com/js/api.js"></script>
-  <script src="app.js?v=352"></script>
+  <script src="app.js?v=36"></script>
 </body>
 </html>
