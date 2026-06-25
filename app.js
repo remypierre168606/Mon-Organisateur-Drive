@@ -492,7 +492,7 @@ $('planTitle').onchange=e=>{plan().title=e.target.value;render()};$('addBucketBt
 
 // ---------------- GOOGLE DRIVE SYNC ----------------
 
-const VERSION_LABEL = 'V36.1';
+const VERSION_LABEL = 'V36.2';
 let driveConnectedForBanner = false;
 let lastSaveTimeForBanner = localStorage.getItem('mon-organiseur-last-save-time') || '--';
 
@@ -549,9 +549,9 @@ function initDriveUi(){
 }
 
 function currentRedirectUri(){
-  // V36.1 : la connexion Google Drive utilise Google Identity Services en mode popup.
+  // V36.2 : la connexion Google Drive utilise Google Identity Services en mode popup.
   // Il n'y a plus d'URI de redirection à configurer pour la connexion.
-  return 'Pas nécessaire en V36.1 (connexion par fenêtre Google)';
+  return 'Pas nécessaire en V36.2 (connexion par fenêtre Google)';
 }
 function updateWebOriginHelp(){
   const o=$('currentOriginText'); if(o) o.textContent=location.origin;
@@ -598,7 +598,7 @@ async function connectDrive(){
     if(!cid){ alert('Il faut d’abord créer/coller le Client ID Google.'); return; }
     if(location.protocol==='file:'){ alert('Google Drive ne fonctionne pas depuis file://. Utilise Netlify ou http://localhost:8000'); return; }
 
-    // V36.1 : nouvelle connexion Google Identity Services par popup.
+    // V36.2 : nouvelle connexion Google Identity Services par popup.
     // Avantage : plus de redirect_uri, donc plus d'erreur redirect_uri_mismatch.
     await waitForGoogleLibraries();
     if(typeof google==='undefined' || !google.accounts || !google.accounts.oauth2){

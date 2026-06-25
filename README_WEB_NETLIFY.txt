@@ -1,4 +1,4 @@
-Version V36.1 - Connexion Google Drive corrigée avec Google Identity Services (popup, sans redirect_uri).
+Version V36.2.2 - Connexion Google Drive corrigée avec Google Identity Services (popup, sans redirect_uri).
 
 MON ORGANISEUR DRIVE WEB - V34b
 
@@ -54,8 +54,11 @@ V35.2 : CORRECTION
 - index.html doit charger app.js?v=352
 
 
-V36 : nouvelles fonctions
+V36.2 : nouvelles fonctions
 - Bandeau du haut plus compact.
 - Glisser une tâche entre les groupes Responsable, Entreprise et Priorité.
 - Bouton Ouvrir ajouté dans la vue Priorité.
 - Dans une tâche, choisir un autre plan pour déplacer la tâche.
+
+
+V36.2 : bandeau supérieur réduit et boutons Responsable / Entreprise alignés sur une seule ligne.

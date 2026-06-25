@@ -18,3 +18,6 @@ Fonctions :
 - Liens associés dans chaque tâche uniquement (pas de fichier stocké)
 
 Important : cette version ne doit plus afficher V23 TEST ni le message code v22.
+
+
+V36.2 : bandeau supérieur réduit et boutons Responsable / Entreprise alignés sur une seule ligne.
