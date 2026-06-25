@@ -183,3 +183,14 @@
   .topActionsCompact input,.topActionsCompact select,.topActionsCompact button{width:100%!important}
   .board{height:auto!important}
 }
+
+
+/* V37 - liens multiples, pièces jointes et agenda amélioré */
+.attachmentsPreview{background:#f8fafc;border:1px solid var(--line);border-radius:12px;padding:10px;display:grid;gap:6px}
+.attachmentRow{display:flex;justify-content:space-between;gap:10px;align-items:center;background:white;border:1px solid #e5e7eb;border-radius:9px;padding:7px 9px;font-size:13px}
+.attachmentRow a{color:#2563eb;font-weight:700;text-decoration:none}
+.taskAttachmentsPreview{display:flex;gap:6px;align-items:center;margin-top:8px;flex-wrap:wrap}
+.taskAttachmentsPreview img{width:42px;height:42px;object-fit:cover;border-radius:8px;border:1px solid #e5e7eb;background:white}
+.agendaPanel{margin-top:16px;background:white;border:1px solid var(--line);border-radius:14px;padding:14px;box-shadow:var(--shadow)}
+.agendaPanel h3{margin:0 0 10px}.agendaGrid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.agendaTask{padding:8px 10px;border-radius:10px;border:1px solid #e5e7eb;margin-top:8px;cursor:pointer;background:#f8fafc}.agendaTask:hover{outline:2px solid #bcd0ff}.agendaTask span{font-weight:800;margin-right:8px}.agendaTask small{display:block;color:var(--muted);margin-top:3px}
+@media(max-width:800px){.agendaGrid{grid-template-columns:1fr}}

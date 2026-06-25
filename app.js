@@ -156,10 +156,48 @@ function linkUrl(u){
   if(/^https?:\/\//i.test(url)) return url;
   return '';
 }
-function linksHtml(t){
-  const url=linkUrl(t.linkUrl||(t.links&&t.links[0]&&t.links[0].url)); const name=t.linkName||(t.links&&t.links[0]&&t.links[0].name); if(!url) return ''; return `<div class="taskLinksPreview"><a class="taskLink" href="${esc(url)}" target="_blank" rel="noopener noreferrer">🔗 ${esc(name||'Ouvrir le lien')}</a></div>`;
+function normalizedLinks(t){
+  const links=Array.isArray(t.links)?t.links.filter(l=>linkUrl(l.url)):[];
+  const legacy=linkUrl(t.linkUrl);
+  if(legacy && !links.some(l=>linkUrl(l.url)===legacy)) links.unshift({name:t.linkName||'Lien',url:legacy});
+  return links;
 }
-function card(t,bid){const el=document.createElement('article');el.className='card priority-'+(t.priority||'normal')+' '+(t.progress==='done'?'done':'');el.draggable=true;el.ondragstart=()=>drag=t.id;el.onclick=()=>openTask(t.id,bid);el.innerHTML=`<h3>${t.progress==='done'?'✅ ':''}${esc(t.title)}</h3><div class="meta">${t.priority!=='low'?`<span class="pill ${t.priority}">${prio(t.priority)}</span>`:''}${t.dueDate?`<span class="pill ${isLate(t)?'late':''}">📅 ${esc(t.dueDate)}</span>`:''}${t.assignee?`<span class="pill">👤 ${esc(t.assignee)}</span>`:''}${t.company?`<span class="pill">🏢 ${esc(t.company)}</span>`:''}</div>${linksHtml(t)}`;el.querySelectorAll('a.taskLink').forEach(a=>a.onclick=e=>e.stopPropagation());return el}
+function linksHtml(t){
+  const links=normalizedLinks(t);
+  if(!links.length) return '';
+  return `<div class="taskLinksPreview">${links.slice(0,3).map(l=>`<a class="taskLink" href="${esc(linkUrl(l.url))}" target="_blank" rel="noopener noreferrer">🔗 ${esc(l.name||'Ouvrir le lien')}</a>`).join('')}${links.length>3?`<div class="small">+ ${links.length-3} autre(s) lien(s)</div>`:''}</div>`;
+}
+function attachmentsHtml(t){
+  const files=Array.isArray(t.attachments)?t.attachments:[];
+  if(!files.length) return '';
+  const imgs=files.filter(f=>String(f.type||'').startsWith('image/')).slice(0,3);
+  return `<div class="taskAttachmentsPreview">${imgs.map(f=>`<img src="${esc(f.dataUrl)}" alt="${esc(f.name||'image')}">`).join('')}${files.length?`<span class="pill">📎 ${files.length}</span>`:''}</div>`;
+}
+function linksTextFromTask(t){
+  return normalizedLinks(t).map(l=>(l.name||'')+' | '+(l.url||'')).join('\n');
+}
+function parseLinksText(txt){
+  return String(txt||'').split('\n').map(s=>s.trim()).filter(Boolean).map(line=>{
+    const parts=line.split('|');
+    if(parts.length>=2) return {name:parts[0].trim(), url:parts.slice(1).join('|').trim()};
+    return {name:'Lien', url:line};
+  }).filter(l=>linkUrl(l.url));
+}
+function attachmentPreviewHtml(t){
+  const files=Array.isArray(t?.attachments)?t.attachments:[];
+  if(!files.length) return '<p class="small">Aucune pièce jointe.</p>';
+  return files.map((f,i)=>`<div class="attachmentRow"><span>${String(f.type||'').startsWith('image/')?'🖼️':'📄'} ${esc(f.name||('Fichier '+(i+1)))}</span>${f.dataUrl?`<a href="${esc(f.dataUrl)}" download="${esc(f.name||'fichier')}">Télécharger</a>`:''}</div>`).join('');
+}
+function filesToDataUrls(fileList){
+  const files=[...(fileList||[])];
+  return Promise.all(files.map(file=>new Promise((resolve,reject)=>{
+    const r=new FileReader();
+    r.onload=()=>resolve({name:file.name,type:file.type||'application/octet-stream',size:file.size,dataUrl:r.result});
+    r.onerror=reject;
+    r.readAsDataURL(file);
+  })));
+}
+function card(t,bid){const el=document.createElement('article');el.className='card priority-'+(t.priority||'normal')+' '+(t.progress==='done'?'done':'');el.draggable=true;el.ondragstart=()=>drag=t.id;el.onclick=()=>openTask(t.id,bid);el.innerHTML=`<h3>${t.progress==='done'?'✅ ':''}${esc(t.title)}</h3><div class="meta">${t.priority!=='low'?`<span class="pill ${t.priority}">${prio(t.priority)}</span>`:''}${t.dueDate?`<span class="pill ${isLate(t)?'late':''}">📅 ${esc(t.dueDate)}</span>`:''}${t.assignee?`<span class="pill">👤 ${esc(t.assignee)}</span>`:''}${t.company?`<span class="pill">🏢 ${esc(t.company)}</span>`:''}</div>${linksHtml(t)}${attachmentsHtml(t)}`;el.querySelectorAll('a.taskLink').forEach(a=>a.onclick=e=>e.stopPropagation());return el}
 function renderList(){const rows=allTasks().filter(pass).map(t=>`<tr class="taskrow priority-${t.priority||'normal'}" data-id="${t.id}"><td>${t.progress==='done'?'✅':'⬜'} ${esc(t.title)}</td><td>${esc(t.bucket.title)}</td><td>${esc(t.assignee||'')}</td><td>${esc(t.company||'')}</td><td>${esc(t.dueDate||'')}</td><td>${prio(t.priority)}</td></tr>`).join('');$('listView').innerHTML=`<table class="listTable"><thead><tr><th>Tâche</th><th>Colonne</th><th>Responsable</th><th>Entreprise</th><th>Date</th><th>Priorité</th></tr></thead><tbody>${rows||'<tr><td>Aucune tâche trouvée.</td></tr>'}</tbody></table>`;document.querySelectorAll('.taskrow').forEach(r=>r.onclick=()=>openTask(r.dataset.id))}
 function renderCalendar(){
   const root=$('calendarView');
@@ -248,8 +286,16 @@ function renderCalendar(){
     $('calMonthBtn').onclick=()=>{calendarMode='month';renderCalendar()};
     $('calWeekBtn').onclick=()=>{calendarMode='week';calendarCursor=new Date(calendarCursor.getFullYear(),calendarCursor.getMonth(),Math.min(new Date().getDate(),28));renderCalendar()};
   }
+  root.insertAdjacentHTML('beforeend', agendaHtml());
   document.querySelectorAll('.calTask').forEach(el=>el.onclick=()=>openTask(el.dataset.id));
+  document.querySelectorAll('.agendaTask').forEach(el=>el.onclick=()=>openTask(el.dataset.id));
   document.querySelectorAll('.calAdd').forEach(btn=>btn.onclick=(e)=>{e.stopPropagation();openTaskOnDate(btn.dataset.date)});
+}
+function agendaHtml(){
+  const now=today();
+  const soon=allPlanTasks().filter(t=>t.dueDate && t.progress!=='done' && t.dueDate>=now).sort((a,b)=>a.dueDate.localeCompare(b.dueDate)).slice(0,10);
+  const late=allPlanTasks().filter(isLate).sort((a,b)=>a.dueDate.localeCompare(b.dueDate)).slice(0,6);
+  return `<section class="agendaPanel"><h3>📅 Agenda rapide</h3><div class="agendaGrid"><div><strong>À venir</strong>${soon.length?soon.map(t=>`<div class="agendaTask priority-${t.priority||'normal'}" data-id="${t.id}"><span>${esc(t.dueDate)}</span> ${esc(t.title)} <small>${esc(t.plan?.title||'')}</small></div>`).join(''):'<p class="small">Aucune échéance à venir.</p>'}</div><div><strong>En retard</strong>${late.length?late.map(t=>`<div class="agendaTask late" data-id="${t.id}"><span>${esc(t.dueDate)}</span> ${esc(t.title)} <small>${esc(t.plan?.title||'')}</small></div>`).join(''):'<p class="small">Aucune tâche en retard.</p>'}</div></div></section>`;
 }
 function dateKey(d){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
 function openTaskOnDate(date){openTask(null,plan().buckets[0].id);$('taskDueDate').value=date}
@@ -451,8 +497,8 @@ function openTask(id,bid){
   $('taskDueDate').value=t?.dueDate||'';
   $('taskPriority').value=t?.priority||'normal';
   $('taskProgress').value=t?.progress||'todo';
-  $('taskLinkName').value=(t?.linkName||t?.links?.[0]?.name||'');
-  $('taskLinkUrl').value=(t?.linkUrl||t?.links?.[0]?.url||'');
+  if($('taskLinks')) $('taskLinks').value=linksTextFromTask(t||{});
+  if($('attachmentsPreview')) $('attachmentsPreview').innerHTML=attachmentPreviewHtml(t||{});
   const planSelect=$('taskPlan');
   if(planSelect){
     planSelect.innerHTML=db.plans.map((p,i)=>`<option value="${i}">${esc(p.title||('Plan '+(i+1)))}</option>`).join('');
@@ -472,8 +518,8 @@ function updateTaskBucketOptions(planIndex, selectedBucketId=''){
   $('taskBucket').value=exists?selectedBucketId:(p.buckets?.[0]?.id||'');
 }
 function checklistFrom(txt){return txt.split('\n').map(s=>s.trim()).filter(Boolean).map(s=>({done:/^\[x\]/i.test(s),text:s.replace(/^\[x\]\s*/i,'')}))}
-$('taskForm').onsubmit=e=>{e.preventDefault();const id=$('taskId').value||uid();const found=findTaskGlobal(id);const old=found.t;const targetPlanIndex=$('taskPlan')?Number($('taskPlan').value):db.activePlan;const targetPlan=db.plans[targetPlanIndex]||plan();const t={id,title:$('taskTitle').value.trim(),notes:$('taskNotes').value.trim(),assignee:$('taskAssignee').value.trim(),company:$('taskCompany').value.trim(),dueDate:$('taskDueDate').value,priority:$('taskPriority').value,progress:$('taskProgress').value,linkName:$('taskLinkName').value.trim(),linkUrl:$('taskLinkUrl').value.trim()};db.plans.forEach(p=>(p.buckets||[]).forEach(b=>b.tasks=b.tasks.filter(x=>x.id!==id)));const targetBucket=(targetPlan.buckets||[]).find(b=>b.id===$('taskBucket').value)||targetPlan.buckets[0]; if(old){targetBucket.tasks.push(t)}else{targetBucket.tasks.unshift(t)}db.activePlan=targetPlanIndex;$('taskDialog').close();render()};
-$('deleteTaskBtn').onclick=()=>{const id=$('taskId').value;if(confirm('Supprimer cette tâche ?')){plan().buckets.forEach(b=>b.tasks=b.tasks.filter(t=>t.id!==id));$('taskDialog').close();render()}};
+$('taskForm').onsubmit=async e=>{e.preventDefault();const id=$('taskId').value||uid();const found=findTaskGlobal(id);const old=found.t;const targetPlanIndex=$('taskPlan')?Number($('taskPlan').value):db.activePlan;const targetPlan=db.plans[targetPlanIndex]||plan();const newFiles=$('taskFiles')?await filesToDataUrls($('taskFiles').files):[];const kept=Array.isArray(old?.attachments)?old.attachments:[];const links=$('taskLinks')?parseLinksText($('taskLinks').value):normalizedLinks(old||{});const t={id,title:$('taskTitle').value.trim(),notes:$('taskNotes').value.trim(),assignee:$('taskAssignee').value.trim(),company:$('taskCompany').value.trim(),dueDate:$('taskDueDate').value,priority:$('taskPriority').value,progress:$('taskProgress').value,links,attachments:[...kept,...newFiles]};db.plans.forEach(p=>(p.buckets||[]).forEach(b=>b.tasks=b.tasks.filter(x=>x.id!==id)));const targetBucket=(targetPlan.buckets||[]).find(b=>b.id===$('taskBucket').value)||targetPlan.buckets[0]; if(old){targetBucket.tasks.push(t)}else{targetBucket.tasks.unshift(t)}db.activePlan=targetPlanIndex;if($('taskFiles')) $('taskFiles').value='';$('taskDialog').close();render()};
+$('deleteTaskBtn').onclick=()=>{const id=$('taskId').value;if(confirm('Supprimer cette tâche ?')){db.plans.forEach(p=>(p.buckets||[]).forEach(b=>b.tasks=b.tasks.filter(t=>t.id!==id)));$('taskDialog').close();render()}};
 $('cancelDialog').onclick=()=>$('taskDialog').close();
 $('cancelDeletePlanBtn').onclick=()=>$('deletePlanDialog').close();
 $('confirmDeletePlanCheck').onchange=e=>{$('confirmDeletePlanBtn').disabled=!e.target.checked};
@@ -492,7 +538,7 @@ $('planTitle').onchange=e=>{plan().title=e.target.value;render()};$('addBucketBt
 
 // ---------------- GOOGLE DRIVE SYNC ----------------
 
-const VERSION_LABEL = 'V36.2';
+const VERSION_LABEL = 'V37';
 let driveConnectedForBanner = false;
 let lastSaveTimeForBanner = localStorage.getItem('mon-organiseur-last-save-time') || '--';
 
