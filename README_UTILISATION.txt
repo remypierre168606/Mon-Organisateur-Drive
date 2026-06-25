@@ -20,7 +20,10 @@ Fonctions :
 Important : cette version ne doit plus afficher V23 TEST ni le message code v22.
 
 
-V37 : bandeau supérieur réduit et boutons Responsable / Entreprise alignés sur une seule ligne.
+V38 : bandeau supérieur réduit et boutons Responsable / Entreprise alignés sur une seule ligne.
 
 
-V37 : vue Priorités améliorée, agenda rapide, plusieurs liens par tâche, pièces jointes et images dans les tâches.
+V38 : vue Priorités améliorée, agenda rapide, plusieurs liens par tâche, pièces jointes et images dans les tâches.
+
+
+V38 : sur une tâche, clique sur le petit bouton 👤 pour chercher les contacts Google liés au responsable ou à l'entreprise.
