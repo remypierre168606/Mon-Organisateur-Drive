@@ -11,12 +11,10 @@ calendarCursor.setDate(1);
 let calendarMode='week';
 
 // Variables Google Drive déclarées dès le début pour éviter les erreurs au chargement.
-const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/contacts.readonly';
+const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.file';
 const DRIVE_DISCOVERY = 'https://www.googleapis.com/discovery/v1/apis/drive/v3/rest';
-const PEOPLE_DISCOVERY = 'https://people.googleapis.com/$discovery/rest?version=v1';
 const DRIVE_FILENAME = 'mon-organiseur-drive-data.json';
 const CLIENT_ID_KEY = 'mon-organiseur-google-client-id';
-const CONTACT_EXCLUDED_COMPANIES_KEY = 'mon-organiseur-contact-excluded-companies';
 var tokenClient = null;
 var driveReady = false;
 var driveFileId = localStorage.getItem('mon-organiseur-drive-file-id') || '';
@@ -199,7 +197,7 @@ function filesToDataUrls(fileList){
     r.readAsDataURL(file);
   })));
 }
-function card(t,bid){const el=document.createElement('article');el.className='card priority-'+(t.priority||'normal')+' '+(t.progress==='done'?'done':'');el.draggable=true;el.ondragstart=()=>drag=t.id;el.onclick=()=>openTask(t.id,bid);el.innerHTML=`<button class="contactQuickBtn" data-id="${esc(t.id)}" title="Chercher les contacts Google">👤</button><h3>${t.progress==='done'?'✅ ':''}${esc(t.title)}</h3><div class="meta">${t.priority!=='low'?`<span class="pill ${t.priority}">${prio(t.priority)}</span>`:''}${t.dueDate?`<span class="pill ${isLate(t)?'late':''}">📅 ${esc(t.dueDate)}</span>`:''}${t.assignee?`<span class="pill">👤 ${esc(t.assignee)}</span>`:''}${t.company?`<span class="pill">🏢 ${esc(t.company)}</span>`:''}</div>${linksHtml(t)}${attachmentsHtml(t)}`;el.querySelectorAll('a.taskLink').forEach(a=>a.onclick=e=>e.stopPropagation());const cbtn=el.querySelector('.contactQuickBtn');if(cbtn)cbtn.onclick=e=>{e.stopPropagation();openContactsForTask(t.id)};return el}
+function card(t,bid){const el=document.createElement('article');el.className='card priority-'+(t.priority||'normal')+' '+(t.progress==='done'?'done':'');el.draggable=true;el.ondragstart=()=>drag=t.id;el.onclick=()=>openTask(t.id,bid);el.innerHTML=`<h3>${t.progress==='done'?'✅ ':''}${esc(t.title)}</h3><div class="meta">${t.priority!=='low'?`<span class="pill ${t.priority}">${prio(t.priority)}</span>`:''}${t.dueDate?`<span class="pill ${isLate(t)?'late':''}">📅 ${esc(t.dueDate)}</span>`:''}${t.assignee?`<span class="pill">👤 ${esc(t.assignee)}</span>`:''}${t.company?`<span class="pill">🏢 ${esc(t.company)}</span>`:''}</div>${linksHtml(t)}${attachmentsHtml(t)}`;el.querySelectorAll('a.taskLink').forEach(a=>a.onclick=e=>e.stopPropagation());return el}
 function renderList(){const rows=allTasks().filter(pass).map(t=>`<tr class="taskrow priority-${t.priority||'normal'}" data-id="${t.id}"><td>${t.progress==='done'?'✅':'⬜'} ${esc(t.title)}</td><td>${esc(t.bucket.title)}</td><td>${esc(t.assignee||'')}</td><td>${esc(t.company||'')}</td><td>${esc(t.dueDate||'')}</td><td>${prio(t.priority)}</td></tr>`).join('');$('listView').innerHTML=`<table class="listTable"><thead><tr><th>Tâche</th><th>Colonne</th><th>Responsable</th><th>Entreprise</th><th>Date</th><th>Priorité</th></tr></thead><tbody>${rows||'<tr><td>Aucune tâche trouvée.</td></tr>'}</tbody></table>`;document.querySelectorAll('.taskrow').forEach(r=>r.onclick=()=>openTask(r.dataset.id))}
 function renderCalendar(){
   const root=$('calendarView');
@@ -538,123 +536,9 @@ $('confirmDeletePlanBtn').onclick=()=>{
 $('planTitle').onchange=e=>{plan().title=e.target.value;render()};$('addBucketBtn').onclick=()=>{const title=prompt('Nom de la colonne ?','Nouvelle colonne');if(title){plan().buckets.push({id:uid(),title,tasks:[]});render()}};$('addTaskTopBtn').onclick=()=>openTask(null,plan().buckets[0].id);$('newPlanBtn').onclick=()=>{const title=prompt('Nom du nouveau plan ?','Nouveau plan');if(title){db.plans.push({id:uid(),title,buckets:[{id:uid(),title:'À faire',tasks:[]},{id:uid(),title:'En cours',tasks:[]},{id:uid(),title:'Terminé',tasks:[]}]});db.activePlan=db.plans.length-1;render()}};document.querySelectorAll('.nav').forEach(n=>n.onclick=()=>{view=n.dataset.view;render()});$('searchInput').oninput=render;$('filterStatus').onchange=render;$('exportBtn').onclick=()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(db,null,2)],{type:'application/json'}));a.download='mon-organiseur-sauvegarde.json';a.click()};$('importInput').onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{db=JSON.parse(r.result);render()}catch{alert('Fichier non valide')}};r.readAsText(f)};$('resetBtn').onclick=()=>{if(confirm('Tout effacer et remettre le modèle de départ ?')){db=starter();render()}};
 
 
-// ---------------- GOOGLE CONTACTS INTELLIGENTS (V38) ----------------
-
-function defaultExcludedContactCompanies(){ return ['ROYALP']; }
-function getExcludedContactCompanies(){
-  try{
-    const raw=localStorage.getItem(CONTACT_EXCLUDED_COMPANIES_KEY);
-    if(!raw){
-      localStorage.setItem(CONTACT_EXCLUDED_COMPANIES_KEY, JSON.stringify(defaultExcludedContactCompanies()));
-      return defaultExcludedContactCompanies();
-    }
-    const arr=JSON.parse(raw);
-    return Array.isArray(arr)?arr.map(x=>String(x||'').trim()).filter(Boolean):defaultExcludedContactCompanies();
-  }catch{
-    return defaultExcludedContactCompanies();
-  }
-}
-function normalizeForCompare(s){
-  return String(s||'').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
-}
-function isContactCompanyExcluded(company){
-  const c=normalizeForCompare(company);
-  if(!c) return false;
-  return getExcludedContactCompanies().some(x=>normalizeForCompare(x)===c);
-}
-function initContactSettingsUi(){
-  const input=$('excludedContactCompanies');
-  const btn=$('saveExcludedContactCompaniesBtn');
-  if(input) input.value=getExcludedContactCompanies().join('\n');
-  if(btn) btn.onclick=()=>{
-    const values=String(input?.value||'').split(/[\n,;]+/).map(x=>x.trim()).filter(Boolean);
-    localStorage.setItem(CONTACT_EXCLUDED_COMPANIES_KEY, JSON.stringify([...new Set(values)]));
-    alert('Liste des entreprises exclues enregistrée.');
-  };
-}
-
-function contactLine(label, value, type='text'){
-  if(!value) return '';
-  const v=esc(value);
-  if(type==='email') return `<a href="mailto:${v}"><strong>${label}</strong> ${v}</a>`;
-  if(type==='phone') return `<a href="tel:${v}"><strong>${label}</strong> ${v}</a>`;
-  if(type==='map') return `<a target="_blank" rel="noopener noreferrer" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(value)}"><strong>${label}</strong> ${v}</a>`;
-  if(type==='url') return `<a target="_blank" rel="noopener noreferrer" href="${/^https?:\/\//i.test(value)?v:'https://'+v}"><strong>${label}</strong> ${v}</a>`;
-  return `<div><strong>${label}</strong> ${v}</div>`;
-}
-function personCardHtml(person, sourceQuery){
-  const name=person.names?.[0]?.displayName || 'Contact sans nom';
-  const org=person.organizations?.[0]?.name || '';
-  const title=person.organizations?.[0]?.title || '';
-  const emails=(person.emailAddresses||[]).map(e=>contactLine('✉', e.value, 'email')).join('');
-  const phones=(person.phoneNumbers||[]).map(p=>contactLine('☎', p.value, 'phone')).join('');
-  const addresses=(person.addresses||[]).map(a=>contactLine('📍', a.formattedValue, 'map')).join('');
-  const urls=(person.urls||[]).map(u=>contactLine('🌐', u.value, 'url')).join('');
-  const bio=(person.biographies||[]).map(b=>contactLine('📝', b.value)).join('');
-  return `<article class="contactCard">
-    <h3>👤 ${esc(name)}</h3>
-    <p class="small">Trouvé avec : ${esc(sourceQuery)}${org?` · ${esc(org)}`:''}${title?` · ${esc(title)}`:''}</p>
-    <div class="contactLines">${emails||''}${phones||''}${addresses||''}${urls||''}${bio||''}</div>
-  </article>`;
-}
-async function searchPeople(query){
-  const q=String(query||'').trim();
-  if(!q) return [];
-  await waitForGoogleLibraries();
-  if(!gapi.client.getToken || !gapi.client.getToken()) throw new Error('Connecte Google Drive / Google Contacts avant la recherche.');
-  const res=await gapi.client.people.people.searchContacts({
-    query:q,
-    readMask:'names,emailAddresses,phoneNumbers,organizations,addresses,urls,biographies',
-    pageSize:10
-  });
-  return (res.result.results||[]).map(r=>r.person).filter(Boolean);
-}
-async function openContactsForTask(taskId){
-  const found=findTaskGlobal(taskId);
-  const t=found.t;
-  if(!t){alert('Tâche introuvable.');return;}
-  const dialog=$('contactsDialog');
-  const info=$('contactsSearchInfo');
-  const results=$('contactsResults');
-  if(!dialog || !info || !results){alert('Fenêtre Contacts non trouvée.');return;}
-  const company=String(t.company||'').trim();
-  if(!company){alert('Cette tâche n’a pas d’entreprise à rechercher.');return;}
-  results.innerHTML='';
-  dialog.showModal();
-  if(isContactCompanyExcluded(company)){
-    info.textContent='Recherche désactivée pour cette entreprise : '+company;
-    results.innerHTML='<div class="emptyContacts">Cette entreprise est dans la liste des entreprises exclues de la recherche Google Contacts.</div>';
-    return;
-  }
-  info.textContent='Recherche dans Google Contacts uniquement avec l’entreprise : '+company;
-  try{
-    const seen=new Set();
-    const cards=[];
-    const people=await searchPeople(company);
-    for(const p of people){
-      const key=p.resourceName || JSON.stringify(p.names||[])+JSON.stringify(p.emailAddresses||[]);
-      if(seen.has(key)) continue;
-      seen.add(key);
-      cards.push(personCardHtml(p,company));
-    }
-    if(!cards.length){
-      results.innerHTML='<div class="emptyContacts">Aucun contact trouvé avec l’entreprise de cette tâche.</div>';
-      info.textContent='Recherche terminée : aucun contact trouvé.';
-    }else{
-      results.innerHTML=cards.join('');
-      info.textContent='Recherche terminée : '+cards.length+' contact(s) trouvé(s).';
-    }
-  }catch(e){
-    console.error(e);
-    results.innerHTML='<div class="emptyContacts">Impossible de lire Google Contacts. Vérifie que l’API People est activée et reconnecte Google Drive.</div>';
-    info.textContent='Erreur Contacts : '+(e?.message||e);
-  }
-}
-
-
 // ---------------- GOOGLE DRIVE SYNC ----------------
 
-const VERSION_LABEL = 'V38.1';
+const VERSION_LABEL = 'V37';
 let driveConnectedForBanner = false;
 let lastSaveTimeForBanner = localStorage.getItem('mon-organiseur-last-save-time') || '--';
 
@@ -707,7 +591,6 @@ function initDriveUi(){
   if(disconnectBtn) disconnectBtn.onclick=(e)=>{ e.preventDefault(); disconnectDrive(); };
   updateVersionBanner();
   updateWebOriginHelp();
-  initContactSettingsUi();
   status('Interface Google Drive prête.');
 }
 
@@ -727,7 +610,7 @@ async function waitForGoogleLibraries(){
   }
   if(typeof gapi==='undefined') throw new Error('Librairie Google API non chargée');
   await new Promise((resolve,reject)=>{ try{ gapi.load('client',resolve); }catch(e){ reject(e); } });
-  await gapi.client.init({discoveryDocs:[DRIVE_DISCOVERY, PEOPLE_DISCOVERY]});
+  await gapi.client.init({discoveryDocs:[DRIVE_DISCOVERY]});
 }
 async function finishOAuthRedirectIfNeeded(){
   const hash=String(location.hash||'');
@@ -862,6 +745,5 @@ document.addEventListener('click', (e)=>{
     connectDrive();
   }
 });
-if($('closeContactsDialog')) $('closeContactsDialog').onclick=()=>$('contactsDialog').close();
 async function startApp(){ initDriveUi(); render(); await finishOAuthRedirectIfNeeded(); }
 if(document.readyState==='loading'){ document.addEventListener('DOMContentLoaded', startApp); } else { startApp(); }

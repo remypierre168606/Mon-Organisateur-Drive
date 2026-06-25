@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Mon Organiseur Drive V38.1</title>
+  <title>Mon Organiseur Drive V37</title>
   <link rel="stylesheet" href="style.css" />
   <style>
     .syncbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px}.syncbar button{padding:8px 10px;border-radius:10px;border:1px solid #d9dde8;background:#fff;cursor:pointer}.syncbar .primary{background:#2563eb;color:#fff;border-color:#2563eb}.syncStatus{font-size:12px;color:#475569}.setupBox{background:#fff7ed;border:1px solid #fed7aa;padding:10px;border-radius:12px;margin-top:10px}.setupBox input{width:min(520px,100%);padding:8px;border:1px solid #ddd;border-radius:8px}.hiddenSetup{display:none}.cloudBadge{font-size:12px;background:#e0f2fe;color:#075985;padding:4px 8px;border-radius:999px}
@@ -11,7 +11,7 @@
 </head>
 <body>
   <aside class="sidebar">
-    <div class="brand"><div class="logo">O</div><div><strong>Mon Organiseur</strong><span>version Drive V38.1</span></div></div>
+    <div class="brand"><div class="logo">O</div><div><strong>Mon Organiseur</strong><span>version Drive V37</span></div></div>
     <button class="nav active" data-view="settings">⚙️ Drive</button>
     <button class="nav" data-view="board">📋 Tableau</button>
     <button class="nav" data-view="list">☑️ Liste</button>
@@ -29,7 +29,7 @@
   </aside>
 
   <main class="app">
-    <div id="versionBanner" class="versionBanner">V38.1 | 🔴 Drive déconnecté | 💾 --</div>
+    <div id="versionBanner" class="versionBanner">V37 | 🔴 Drive déconnecté | 💾 --</div>
     <header class="topbar topbarCompact">
       <div class="topIdentity">
         <input id="planTitle" class="planTitle" aria-label="Nom du plan">
@@ -74,14 +74,6 @@
           <p><strong>URI de redirection :</strong></p>
           <code id="currentRedirectText">--</code>
           <p class="small">Pour la V36.2, ajoute seulement l’origine JavaScript dans Google Cloud. L’URI de redirection n’est plus nécessaire.</p>
-        </div>
-        <div class="settingsHelp contactExcludeBox">
-          <h3>👤 Recherche Google Contacts</h3>
-          <p>La recherche se fait uniquement avec le nom de l’entreprise de la tâche.</p>
-          <p><strong>Entreprises à exclure de cette recherche :</strong></p>
-          <textarea id="excludedContactCompanies" rows="3" placeholder="ROYALP"></textarea>
-          <button id="saveExcludedContactCompaniesBtn" type="button">Enregistrer la liste d’exclusion</button>
-          <p class="small">Écris une entreprise par ligne. Par défaut : ROYALP.</p>
         </div>
         <div class="settingsHelp">
           <h3>Utilisation simple</h3>
@@ -137,20 +129,8 @@
     </form>
   </dialog>
 
-
-  <dialog id="contactsDialog" class="contactsDialog">
-    <div class="contactsDialogInner">
-      <div class="contactsDialogHead">
-        <h2>👤 Contacts trouvés</h2>
-        <button type="button" id="closeContactsDialog" class="backBtn">Fermer</button>
-      </div>
-      <p id="contactsSearchInfo" class="small">Recherche dans Google Contacts...</p>
-      <div id="contactsResults" class="contactsResults"></div>
-    </div>
-  </dialog>
-
   <script src="https://accounts.google.com/gsi/client"></script>
   <script src="https://apis.google.com/js/api.js"></script>
-  <script src="app.js?v=381"></script>
+  <script src="app.js?v=37"></script>
 </body>
 </html>

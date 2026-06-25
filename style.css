@@ -194,26 +194,3 @@
 .agendaPanel{margin-top:16px;background:white;border:1px solid var(--line);border-radius:14px;padding:14px;box-shadow:var(--shadow)}
 .agendaPanel h3{margin:0 0 10px}.agendaGrid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.agendaTask{padding:8px 10px;border-radius:10px;border:1px solid #e5e7eb;margin-top:8px;cursor:pointer;background:#f8fafc}.agendaTask:hover{outline:2px solid #bcd0ff}.agendaTask span{font-weight:800;margin-right:8px}.agendaTask small{display:block;color:var(--muted);margin-top:3px}
 @media(max-width:800px){.agendaGrid{grid-template-columns:1fr}}
-
-
-/* V38 - Contacts Google dans les tâches */
-.card{position:relative}
-.contactQuickBtn{position:absolute;top:8px;right:8px;border:0;background:#e0f2fe;color:#075985;border-radius:999px;width:30px;height:30px;display:grid;place-items:center;cursor:pointer;font-size:15px;box-shadow:0 4px 10px #00000012}
-.contactQuickBtn:hover{background:#bae6fd;transform:scale(1.04)}
-.card h3{padding-right:34px}
-.contactsDialog{width:min(820px,96vw)}
-.contactsDialogInner{display:grid;gap:12px}
-.contactsDialogHead{display:flex;justify-content:space-between;gap:12px;align-items:center}
-.contactsDialogHead h2{margin:0}
-.contactsResults{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;max-height:62vh;overflow:auto;padding:2px}
-.contactCard{background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:14px}
-.contactCard h3{margin:0 0 4px;padding:0;font-size:16px}
-.contactLines{display:grid;gap:6px;margin-top:10px;font-size:13px}
-.contactLines a,.contactLines div{display:block;background:#f8fafc;border:1px solid #e5e7eb;border-radius:9px;padding:7px;color:#172033;text-decoration:none;word-break:break-word}
-.contactLines a:hover{background:#eef4ff;text-decoration:underline}
-.emptyContacts{background:#f8fafc;border:1px dashed var(--line);border-radius:12px;padding:16px;color:var(--muted)}
-
-
-/* V38.1 - paramètres de recherche Contacts */
-.contactExcludeBox textarea{width:100%;min-height:72px;resize:vertical;margin-top:6px}
-.contactExcludeBox button{width:max-content;margin-top:8px}
