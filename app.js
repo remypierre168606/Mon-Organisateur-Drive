@@ -414,7 +414,7 @@ $('planTitle').onchange=e=>{plan().title=e.target.value;render()};$('addBucketBt
 
 // ---------------- GOOGLE DRIVE SYNC ----------------
 
-const VERSION_LABEL = 'V35.1';
+const VERSION_LABEL = 'V35.2';
 let driveConnectedForBanner = false;
 let lastSaveTimeForBanner = localStorage.getItem('mon-organiseur-last-save-time') || '--';
 
@@ -471,7 +471,9 @@ function initDriveUi(){
 }
 
 function currentRedirectUri(){
-  return location.origin + location.pathname;
+  // V35.2 : on force la racine du site pour éviter les mélanges /index.html ou paramètres de cache.
+  // Dans Google Cloud, ajoute exactement cette adresse dans URI de redirection autorisés.
+  return location.origin + '/';
 }
 function updateWebOriginHelp(){
   const o=$('currentOriginText'); if(o) o.textContent=location.origin;
@@ -517,7 +519,7 @@ async function connectDrive(){
     const cid=clientId();
     if(!cid){ alert('Il faut d’abord créer/coller le Client ID Google.'); return; }
     if(location.protocol==='file:'){ alert('Google Drive ne fonctionne pas depuis file://. Utilise Netlify ou http://localhost:8000'); return; }
-    // V35.1 : flux OAuth par redirection, plus fiable sur Netlify que la fenêtre popup GIS.
+    // V35.2 : flux OAuth par redirection stable sur Netlify et localhost.
     const redirectUri=currentRedirectUri();
     const auth=new URL('https://accounts.google.com/o/oauth2/v2/auth');
     auth.searchParams.set('client_id', cid);

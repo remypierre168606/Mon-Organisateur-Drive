@@ -36,7 +36,7 @@ IMPORTANT :
 Avant toute mise à jour de version, fais toujours Exporter JSON depuis l'ancienne version.
 
 
-V35.1 : IMPORTANT GOOGLE CLOUD
+V35.2 : IMPORTANT GOOGLE CLOUD
 Cette version utilise un flux OAuth par redirection, plus fiable sur Netlify.
 Dans Google Cloud > Client OAuth, ajoute :
 - Origines JavaScript autorisées : l'origine affichée dans la page Drive
@@ -44,3 +44,9 @@ Dans Google Cloud > Client OAuth, ajoute :
 Exemple Netlify :
 Origine : https://eclectic-faloodeh-678e05.netlify.app
 Redirection : https://eclectic-faloodeh-678e05.netlify.app/
+
+
+V35.2 : CORRECTION
+- URI de redirection forcée à la racine du site : https://ton-site.netlify.app/
+- Le fichier app.js doit contenir VERSION_LABEL = V35.2
+- index.html doit charger app.js?v=352
