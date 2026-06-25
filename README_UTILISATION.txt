@@ -20,7 +20,4 @@ Fonctions :
 Important : cette version ne doit plus afficher V23 TEST ni le message code v22.
 
 
-V37 : bandeau supérieur réduit et boutons Responsable / Entreprise alignés sur une seule ligne.
-
-
-V37 : vue Priorités améliorée, agenda rapide, plusieurs liens par tâche, pièces jointes et images dans les tâches.
+V36.2 : bandeau supérieur réduit et boutons Responsable / Entreprise alignés sur une seule ligne.
