@@ -492,7 +492,7 @@ $('planTitle').onchange=e=>{plan().title=e.target.value;render()};$('addBucketBt
 
 // ---------------- GOOGLE DRIVE SYNC ----------------
 
-const VERSION_LABEL = 'V36';
+const VERSION_LABEL = 'V36.1';
 let driveConnectedForBanner = false;
 let lastSaveTimeForBanner = localStorage.getItem('mon-organiseur-last-save-time') || '--';
 
@@ -549,9 +549,9 @@ function initDriveUi(){
 }
 
 function currentRedirectUri(){
-  // V35.2 : on force la racine du site pour éviter les mélanges /index.html ou paramètres de cache.
-  // Dans Google Cloud, ajoute exactement cette adresse dans URI de redirection autorisés.
-  return location.origin + '/';
+  // V36.1 : la connexion Google Drive utilise Google Identity Services en mode popup.
+  // Il n'y a plus d'URI de redirection à configurer pour la connexion.
+  return 'Pas nécessaire en V36.1 (connexion par fenêtre Google)';
 }
 function updateWebOriginHelp(){
   const o=$('currentOriginText'); if(o) o.textContent=location.origin;
@@ -597,18 +597,43 @@ async function connectDrive(){
     const cid=clientId();
     if(!cid){ alert('Il faut d’abord créer/coller le Client ID Google.'); return; }
     if(location.protocol==='file:'){ alert('Google Drive ne fonctionne pas depuis file://. Utilise Netlify ou http://localhost:8000'); return; }
-    // V35.2 : flux OAuth par redirection stable sur Netlify et localhost.
-    const redirectUri=currentRedirectUri();
-    const auth=new URL('https://accounts.google.com/o/oauth2/v2/auth');
-    auth.searchParams.set('client_id', cid);
-    auth.searchParams.set('redirect_uri', redirectUri);
-    auth.searchParams.set('response_type','token');
-    auth.searchParams.set('scope', DRIVE_SCOPE);
-    auth.searchParams.set('include_granted_scopes','true');
-    auth.searchParams.set('prompt','consent');
-    localStorage.setItem('mon-organiseur-oauth-redirect-uri', redirectUri);
-    status('Redirection vers Google...');
-    location.href=auth.toString();
+
+    // V36.1 : nouvelle connexion Google Identity Services par popup.
+    // Avantage : plus de redirect_uri, donc plus d'erreur redirect_uri_mismatch.
+    await waitForGoogleLibraries();
+    if(typeof google==='undefined' || !google.accounts || !google.accounts.oauth2){
+      throw new Error('Librairie Google Identity Services non chargée');
+    }
+
+    tokenClient = google.accounts.oauth2.initTokenClient({
+      client_id: cid,
+      scope: DRIVE_SCOPE,
+      prompt: 'consent',
+      callback: async (resp)=>{
+        if(resp.error){
+          console.error(resp);
+          status('Connexion refusée : '+resp.error);
+          alert('Connexion refusée : '+resp.error);
+          return;
+        }
+        try{
+          status('Connexion Google reçue. Initialisation Drive...');
+          gapi.client.setToken({access_token: resp.access_token});
+          driveReady=true;
+          setDriveBanner(true);
+          status('Drive connecté. Chargement de la sauvegarde...');
+          await loadFromDrive(true);
+          scheduleDriveAutosave();
+        }catch(e){
+          console.error(e);
+          status('Erreur après connexion Google. Voir console.');
+          alert('Erreur après connexion Google : '+(e?.message||e));
+        }
+      }
+    });
+
+    status('Ouverture de la fenêtre Google...');
+    tokenClient.requestAccessToken({prompt:'consent'});
   }catch(e){
     console.error(e);
     status('Erreur de connexion Google Drive. Voir console.');
@@ -617,8 +642,8 @@ async function connectDrive(){
 }
 
 function disconnectDrive(){
-  const token=gapi?.client?.getToken?.();
-  if(token && typeof google!=='undefined') google.accounts.oauth2.revoke(token.access_token);
+  const token=(typeof gapi!=='undefined' && gapi.client && gapi.client.getToken)?gapi.client.getToken():null;
+  if(token && typeof google!=='undefined' && google.accounts && google.accounts.oauth2) google.accounts.oauth2.revoke(token.access_token);
   if(typeof gapi!=='undefined' && gapi.client) gapi.client.setToken('');
   driveReady=false; status('Drive déconnecté.');
 }

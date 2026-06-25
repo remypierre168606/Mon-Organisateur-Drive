@@ -1,3 +1,5 @@
+Version V36.1 - Connexion Google Drive corrigée avec Google Identity Services (popup, sans redirect_uri).
+
 MON ORGANISEUR DRIVE WEB - V34b
 
 Cette version est prête à être déposée sur un hébergeur web statique comme Netlify.
