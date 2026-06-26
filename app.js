@@ -122,10 +122,19 @@ function appointmentsByDate(){
   Object.values(map).forEach(arr=>arr.sort((a,b)=>String(a.time||'99:99').localeCompare(String(b.time||'99:99'))));
   return map;
 }
-function hasAppointments(){ return validAppointments().length>0; }
-function hasAppointmentToday(){ return validAppointments().some(a=>a.date===today()); }
-function appointmentTargetDate(){
-  const list=sortedAppointments();
+function cleanCompanyName(v){ return String(v||'').trim().toLowerCase(); }
+function appointmentsForCompany(company){
+  const clean=cleanCompanyName(company);
+  if(!clean) return [];
+  return validAppointments().filter(a=>cleanCompanyName(a.company)===clean).sort((a,b)=>{
+    const da=String(a.date||'9999-99-99').localeCompare(String(b.date||'9999-99-99'));
+    if(da) return da;
+    return String(a.time||'99:99').localeCompare(String(b.time||'99:99'));
+  });
+}
+function hasAppointmentTodayForCompany(company){ return appointmentsForCompany(company).some(a=>a.date===today()); }
+function appointmentTargetDate(company){
+  const list=appointmentsForCompany(company);
   const td=today();
   const todayAppt=list.find(a=>a.date===td);
   if(todayAppt) return td;
@@ -136,15 +145,19 @@ function setCalendarDate(dateStr){
   const [y,m,d]=String(dateStr||today()).split('-').map(Number);
   calendarCursor=new Date(y||new Date().getFullYear(), (m||1)-1, d||1);
 }
-function openAppointmentDay(){
-  setCalendarDate(appointmentTargetDate());
+function openAppointmentDay(company){
+  setCalendarDate(appointmentTargetDate(company));
   calendarMode='day';
   view='calendar';
   render();
 }
-function appointmentDotHtml(){
-  if(!hasAppointments()) return '';
-  return `<button type="button" class="appointmentDot ${hasAppointmentToday()?'blink':''}" title="Voir les RDV" aria-label="Voir les RDV">●</button>`;
+function appointmentDotHtml(t){
+  const company=String(t?.company||'').trim();
+  if(!company) return '';
+  const list=appointmentsForCompany(company);
+  if(!list.length) return '';
+  const blink=list.some(a=>a.date===today());
+  return `<button type="button" class="appointmentDot ${blink?'blink':''}" data-company="${esc(company)}" title="Voir les RDV ${esc(company)}" aria-label="Voir les RDV ${esc(company)}">●</button>`;
 }
 function appointmentCompanyOptions(selected=''){
   ensurePlanData();
@@ -247,7 +260,7 @@ function linkUrl(u){
 function linksHtml(t){
   const url=linkUrl(t.linkUrl||(t.links&&t.links[0]&&t.links[0].url)); const name=t.linkName||(t.links&&t.links[0]&&t.links[0].name); if(!url) return ''; return `<div class="taskLinksPreview"><a class="taskLink" href="${esc(url)}" target="_blank" rel="noopener noreferrer">🔗 ${esc(name||'Ouvrir le lien')}</a></div>`;
 }
-function card(t,bid){const el=document.createElement('article');el.className='card priority-'+(t.priority||'normal')+' '+(t.progress==='done'?'done':'');el.draggable=true;el.ondragstart=()=>drag=t.id;el.onclick=()=>openTask(t.id,bid);el.innerHTML=`${appointmentDotHtml()}<h3>${t.progress==='done'?'✅ ':''}${esc(t.title)}</h3><div class="meta">${t.priority!=='low'?`<span class="pill ${t.priority}">${prio(t.priority)}</span>`:''}${t.dueDate?`<span class="pill ${isLate(t)?'late':''}">📅 ${esc(t.dueDate)}</span>`:''}${t.assignee?`<span class="pill">👤 ${esc(t.assignee)}</span>`:''}${t.company?`<span class="pill">🏢 ${esc(t.company)}</span>`:''}</div>${linksHtml(t)}`;el.querySelectorAll('a.taskLink').forEach(a=>a.onclick=e=>e.stopPropagation());return el}
+function card(t,bid){const el=document.createElement('article');el.className='card priority-'+(t.priority||'normal')+' '+(t.progress==='done'?'done':'');el.draggable=true;el.ondragstart=()=>drag=t.id;el.onclick=()=>openTask(t.id,bid);el.innerHTML=`${appointmentDotHtml(t)}<h3>${t.progress==='done'?'✅ ':''}${esc(t.title)}</h3><div class="meta">${t.priority!=='low'?`<span class="pill ${t.priority}">${prio(t.priority)}</span>`:''}${t.dueDate?`<span class="pill ${isLate(t)?'late':''}">📅 ${esc(t.dueDate)}</span>`:''}${t.assignee?`<span class="pill">👤 ${esc(t.assignee)}</span>`:''}${t.company?`<span class="pill">🏢 ${esc(t.company)}</span>`:''}</div>${linksHtml(t)}`;el.querySelectorAll('a.taskLink').forEach(a=>a.onclick=e=>e.stopPropagation());return el}
 function listPriorityRank(p){return {urgent:0,high:1,normal:2,low:3}[p||'normal'] ?? 2}
 function listDateRank(d){return d ? d : '9999-99-99'}
 function renderList(){
@@ -264,7 +277,7 @@ function renderList(){
     if(ea) return ea;
     return String(a.title||'').localeCompare(String(b.title||''),'fr',{sensitivity:'base'});
   });
-  const rows=tasks.map(t=>`<tr class="taskrow priority-${t.priority||'normal'}" data-id="${t.id}"><td class="taskTitleCell">${appointmentDotHtml()} ${t.progress==='done'?'✅':'⬜'} ${esc(t.title)}</td><td>${esc(t.bucket.title)}</td><td>${esc(t.assignee||'')}</td><td>${esc(t.company||'')}</td><td>${esc(t.dueDate||'')}</td><td>${prio(t.priority)}</td></tr>`).join('');
+  const rows=tasks.map(t=>`<tr class="taskrow priority-${t.priority||'normal'}" data-id="${t.id}"><td class="taskTitleCell">${appointmentDotHtml(t)} ${t.progress==='done'?'✅':'⬜'} ${esc(t.title)}</td><td>${esc(t.bucket.title)}</td><td>${esc(t.assignee||'')}</td><td>${esc(t.company||'')}</td><td>${esc(t.dueDate||'')}</td><td>${prio(t.priority)}</td></tr>`).join('');
   $('listView').innerHTML=`
     <div class="listQuickFilters">
       <label><input id="listUrgentFilter" type="checkbox" ${listFilterUrgent?'checked':''}> 🔴 Urgentes</label>
@@ -409,7 +422,7 @@ function groupKeyValue(t, field){
 function taskRowForGroup(t, field){
   return `<div class="groupTask priority-${t.priority||'normal'}" data-plan="${t.planIndex}" data-id="${t.id}">
     <div>
-      <strong>${appointmentDotHtml()} ${t.progress==='done'?'✅ ':''}${esc(t.title)}</strong>
+      <strong>${appointmentDotHtml(t)} ${t.progress==='done'?'✅ ':''}${esc(t.title)}</strong>
       <div class="small">Plan : ${esc(t.plan?.title||'')} · Colonne : ${esc(t.bucket?.title||'')}</div>
     </div>
     <div class="groupMeta">
@@ -535,7 +548,7 @@ function renderPriorityDetail(priority){
 function taskRowForPriority(t){
   return `<div class="groupTask priority-${t.priority||'normal'}" data-plan="${t.planIndex}" data-id="${t.id}">
     <div>
-      <strong>${appointmentDotHtml()} ${t.progress==='done'?'✅ ':''}${esc(t.title)}</strong>
+      <strong>${appointmentDotHtml(t)} ${t.progress==='done'?'✅ ':''}${esc(t.title)}</strong>
       <div class="small">Plan : ${esc(t.plan?.title||'')} · Colonne : ${esc(t.bucket?.title||'')}</div>
     </div>
     <div class="groupMeta">
@@ -640,7 +653,7 @@ $('cancelAppointmentDialog').onclick=()=>$('appointmentDialog').close();
 $('deleteAppointmentBtn').onclick=()=>{const id=$('appointmentId').value;if(id){deleteAppointment(id);$('appointmentDialog').close();}};
 document.addEventListener('click', (e)=>{
   const dot=e.target.closest('.appointmentDot');
-  if(dot){ e.preventDefault(); e.stopPropagation(); openAppointmentDay(); }
+  if(dot){ e.preventDefault(); e.stopPropagation(); openAppointmentDay(dot.dataset.company||''); }
 });
 
 $('taskForm').onsubmit=e=>{e.preventDefault();const id=$('taskId').value||uid();const found=findTaskGlobal(id);const old=found.t;const targetPlanIndex=$('taskPlan')?Number($('taskPlan').value):db.activePlan;const targetPlan=db.plans[targetPlanIndex]||plan();const t={id,title:$('taskTitle').value.trim(),notes:$('taskNotes').value.trim(),assignee:$('taskAssignee').value.trim(),company:$('taskCompany').value.trim(),dueDate:$('taskDueDate').value,priority:$('taskPriority').value,progress:$('taskProgress').value,linkName:$('taskLinkName').value.trim(),linkUrl:$('taskLinkUrl').value.trim()};db.plans.forEach(p=>(p.buckets||[]).forEach(b=>b.tasks=b.tasks.filter(x=>x.id!==id)));const targetBucket=(targetPlan.buckets||[]).find(b=>b.id===$('taskBucket').value)||targetPlan.buckets[0]; if(old){targetBucket.tasks.push(t)}else{targetBucket.tasks.unshift(t)}db.activePlan=targetPlanIndex;$('taskDialog').close();render()};
@@ -663,7 +676,7 @@ $('planTitle').onchange=e=>{plan().title=e.target.value;render()};$('addBucketBt
 
 // ---------------- GOOGLE DRIVE SYNC ----------------
 
-const VERSION_LABEL = 'V40.5';
+const VERSION_LABEL = 'V40.6';
 let driveConnectedForBanner = false;
 let lastSaveTimeForBanner = localStorage.getItem('mon-organiseur-last-save-time') || '--';
 
