@@ -221,3 +221,19 @@
 .appointmentDot.blink{animation:appointmentBlink 1s infinite}
 @keyframes appointmentBlink{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.25;transform:scale(1.25)}}
 .calAppt{font-size:12px;background:#ede9fe;color:#5b21b6;border-left:6px solid #8b5cf6;border-radius:8px;padding:5px 6px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:800}.calAppt:hover{text-decoration:underline;background:#f5f3ff}.calCellBtns{display:flex;gap:4px;align-items:center}.calAddRdv{padding:2px 6px;border-radius:8px;background:#ede9fe;color:#5b21b6;border:0;font-size:11px;font-weight:800}.appointmentAddBtn{background:#8b5cf6!important;border-color:#8b5cf6!important;color:white!important}.calendarDayView{display:grid;grid-template-columns:360px 1fr;gap:14px}.dayPanel{background:white;border:1px solid var(--line);border-radius:14px;padding:14px;box-shadow:var(--shadow)}.dayPanel h3{margin:0 0 10px}.appointmentList{display:grid;gap:10px}.appointmentItem{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;border:1px solid #ddd6fe;background:#faf5ff;border-radius:12px;padding:10px}.appointmentActions{display:flex;gap:6px;flex-wrap:wrap}.appointmentActions button{padding:6px 8px;font-size:12px}.dayTasks{display:grid;gap:6px}@media(max-width:900px){.calendarDayView{grid-template-columns:1fr}.appointmentItem{display:block}.appointmentActions{margin-top:8px}}
+
+/* V40.7 - Filtre calendrier RDV uniquement */
+.calendarRdvOnly{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  white-space:nowrap;
+  background:#f3e8ff;
+  border:1px solid #d8b4fe;
+  color:#581c87;
+  border-radius:999px;
+  padding:8px 11px;
+  font-weight:800;
+  font-size:13px;
+}
+.calendarRdvOnly input{width:auto;margin:0;accent-color:#7e22ce}

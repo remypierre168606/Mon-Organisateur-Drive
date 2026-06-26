@@ -65,3 +65,6 @@ V36.2 : bandeau supérieur réduit et boutons Responsable / Entreprise alignés 
 
 
 V40.6 RDV : correction des ronds violets fantômes. Seuls les RDV créés avec la fenêtre RDV V40.6 déclenchent le rond violet. Les anciens RDV de test sont ignorés.
+
+
+V40.7 : Calendrier - ajout d'une case compacte "RDV uniquement" dans les vues Jour/Semaine/Mois pour masquer les tâches et afficher seulement les rendez-vous.

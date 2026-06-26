@@ -21,3 +21,6 @@ Important : cette version ne doit plus afficher V23 TEST ni le message code v22.
 
 
 V36.2 : bandeau supérieur réduit et boutons Responsable / Entreprise alignés sur une seule ligne.
+
+
+V40.7 : Calendrier - ajout d'une case compacte "RDV uniquement" dans les vues Jour/Semaine/Mois pour masquer les tâches et afficher seulement les rendez-vous.

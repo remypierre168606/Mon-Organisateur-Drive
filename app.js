@@ -9,6 +9,7 @@ let db=load(), view=(localStorage.getItem('mon-organiseur-google-client-id')?'bo
 let calendarCursor=new Date();
 calendarCursor.setDate(1);
 let calendarMode='week';
+let calendarRdvOnly = localStorage.getItem('mon-organiseur-calendar-rdv-only') === '1';
 let listFilterUrgent=false;
 let listFilterHigh=false;
 
@@ -299,12 +300,14 @@ function renderCalendar(){
   });
   const apptsByDate=appointmentsByDate();
   const apptHtml=(date)=> (apptsByDate[date]||[]).map(a=>`<div class="calAppt" data-appt="${a.id}" title="${esc(a.company||'RDV')}">${appointmentLabel(a)}</div>`).join('');
+  const tasksForCalendar=(date)=> calendarRdvOnly ? [] : (tasksByDate[date]||[]);
+  const rdvOnlyHtml=()=>`<label class="calendarRdvOnly"><input id="calendarRdvOnlyCheck" type="checkbox" ${calendarRdvOnly?'checked':''}> RDV uniquement</label>`;
   const switchHtml=(mode)=>`<div class="calendarSwitch"><button id="calMonthBtn" class="${mode==='month'?'activeSwitch':''}">Mois</button><button id="calWeekBtn" class="${mode==='week'?'activeSwitch':''}">Semaine</button><button id="calDayBtn" class="${mode==='day'?'activeSwitch':''}">Jour</button></div>`;
 
   if(calendarMode==='day'){
     const key=dateKey(calendarCursor);
     const title=calendarCursor.toLocaleDateString('fr-FR',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
-    const tasks=tasksByDate[key]||[];
+    const tasks=tasksForCalendar(key);
     const appts=apptsByDate[key]||[];
     root.innerHTML=`
       <div class="calendarHeader">
@@ -313,6 +316,7 @@ function renderCalendar(){
         <button id="calNextBtn">Jour suivant →</button>
         <button id="calTodayBtn">Aujourd'hui</button>
         <button id="addAppointmentTopBtn" class="appointmentAddBtn">+ RDV</button>
+        ${rdvOnlyHtml()}
         ${switchHtml('day')}
       </div>
       <div class="calendarDayView">
@@ -343,7 +347,7 @@ function renderCalendar(){
       d.setDate(weekStart.getDate()+i);
       const key=dateKey(d);
       const isToday=key===today();
-      const tasks=tasksByDate[key]||[];
+      const tasks=tasksForCalendar(key);
       const dayName=d.toLocaleDateString('fr-FR',{weekday:'long'});
       days.push(`<div class="calCell weekCell ${isToday?'todayCell':''}">
         <div class="calDate weekDate"><div><strong>${esc(dayName.charAt(0).toUpperCase()+dayName.slice(1))}</strong><br><span>${d.toLocaleDateString('fr-FR')}</span></div><div class="calCellBtns"><button class="calAddRdv" data-date="${key}" title="Ajouter un RDV">RDV</button><button class="calAdd" data-date="${key}" title="Ajouter une tâche à cette date">+</button></div></div>
@@ -357,6 +361,7 @@ function renderCalendar(){
         <button id="calNextBtn">Semaine suivante →</button>
         <button id="calTodayBtn">Aujourd'hui</button>
         <button id="addAppointmentTopBtn" class="appointmentAddBtn">+ RDV</button>
+        ${rdvOnlyHtml()}
         ${switchHtml('week')}
       </div>
       <div class="calendarWeek">${days.join('')}</div>`;
@@ -378,7 +383,7 @@ function renderCalendar(){
       const key=dateKey(d);
       const inMonth=d.getMonth()===m;
       const isToday=key===today();
-      const tasks=tasksByDate[key]||[];
+      const tasks=tasksForCalendar(key);
       days.push(`<div class="calCell ${inMonth?'':'otherMonth'} ${isToday?'todayCell':''}">
         <div class="calDate"><strong>${d.getDate()}</strong><div class="calCellBtns"><button class="calAddRdv" data-date="${key}" title="Ajouter un RDV">RDV</button><button class="calAdd" data-date="${key}" title="Ajouter une tâche à cette date">+</button></div></div>
         <div class="calTasks">${apptHtml(key)}${tasks.map(t=>`<div class="calTask priority-${t.priority||'normal'} ${isLate(t)?'lateTask':''}" data-id="${t.id}" title="${esc(t.title)}">${t.progress==='done'?'✅ ':''}${esc(t.title)}</div>`).join('')}</div>
@@ -391,6 +396,7 @@ function renderCalendar(){
         <button id="calNextBtn">Mois suivant →</button>
         <button id="calTodayBtn">Aujourd'hui</button>
         <button id="addAppointmentTopBtn" class="appointmentAddBtn">+ RDV</button>
+        ${rdvOnlyHtml()}
         ${switchHtml('month')}
       </div>
       <div class="calendarMonth">
@@ -402,6 +408,8 @@ function renderCalendar(){
     $('calTodayBtn').onclick=()=>{calendarCursor=new Date();calendarCursor.setDate(1);renderCalendar()};
     $('addAppointmentTopBtn').onclick=()=>openAppointmentDialog('',dateKey(calendarCursor));
   }
+  const rdvOnlyCheck=$('calendarRdvOnlyCheck');
+  if(rdvOnlyCheck) rdvOnlyCheck.onchange=e=>{calendarRdvOnly=!!e.target.checked;localStorage.setItem('mon-organiseur-calendar-rdv-only',calendarRdvOnly?'1':'0');renderCalendar()};
   $('calMonthBtn').onclick=()=>{calendarMode='month';calendarCursor.setDate(1);renderCalendar()};
   $('calWeekBtn').onclick=()=>{calendarMode='week';renderCalendar()};
   $('calDayBtn').onclick=()=>{calendarMode='day';renderCalendar()};
@@ -676,7 +684,7 @@ $('planTitle').onchange=e=>{plan().title=e.target.value;render()};$('addBucketBt
 
 // ---------------- GOOGLE DRIVE SYNC ----------------
 
-const VERSION_LABEL = 'V40.6';
+const VERSION_LABEL = 'V40.7';
 let driveConnectedForBanner = false;
 let lastSaveTimeForBanner = localStorage.getItem('mon-organiseur-last-save-time') || '--';
 
