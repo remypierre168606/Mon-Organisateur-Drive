@@ -213,3 +213,11 @@
   font-size:13px;
   white-space:nowrap;
 }
+
+
+/* V40.3 - Rendez-vous violets */
+.appointmentDot{position:absolute;top:7px;right:8px;width:18px;height:18px;border:0;border-radius:999px;background:#8b5cf6;color:#8b5cf6;box-shadow:0 0 0 2px #ede9fe;cursor:pointer;padding:0;font-size:0;z-index:2}
+.card{position:relative}.taskTitleCell{position:relative}.taskTitleCell .appointmentDot{position:static;display:inline-block;vertical-align:middle;margin-right:6px}.groupTask .appointmentDot{position:static;display:inline-block;vertical-align:middle;margin-right:6px}
+.appointmentDot.blink{animation:appointmentBlink 1s infinite}
+@keyframes appointmentBlink{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.25;transform:scale(1.25)}}
+.calAppt{font-size:12px;background:#ede9fe;color:#5b21b6;border-left:6px solid #8b5cf6;border-radius:8px;padding:5px 6px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:800}.calAppt:hover{text-decoration:underline;background:#f5f3ff}.calCellBtns{display:flex;gap:4px;align-items:center}.calAddRdv{padding:2px 6px;border-radius:8px;background:#ede9fe;color:#5b21b6;border:0;font-size:11px;font-weight:800}.appointmentAddBtn{background:#8b5cf6!important;border-color:#8b5cf6!important;color:white!important}.calendarDayView{display:grid;grid-template-columns:360px 1fr;gap:14px}.dayPanel{background:white;border:1px solid var(--line);border-radius:14px;padding:14px;box-shadow:var(--shadow)}.dayPanel h3{margin:0 0 10px}.appointmentList{display:grid;gap:10px}.appointmentItem{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;border:1px solid #ddd6fe;background:#faf5ff;border-radius:12px;padding:10px}.appointmentActions{display:flex;gap:6px;flex-wrap:wrap}.appointmentActions button{padding:6px 8px;font-size:12px}.dayTasks{display:grid;gap:6px}@media(max-width:900px){.calendarDayView{grid-template-columns:1fr}.appointmentItem{display:block}.appointmentActions{margin-top:8px}}

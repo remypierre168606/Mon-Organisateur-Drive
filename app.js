@@ -1,7 +1,7 @@
 const KEY='mon-organiseur-drive-v1';
 const uid=()=>crypto.randomUUID?crypto.randomUUID():String(Date.now()+Math.random());
 const today=()=>new Date().toISOString().slice(0,10);
-const starter=()=>({activePlan:0,assignees:['Christophe'],companies:[],plans:[{id:uid(),title:'Plan de travail',buckets:[
+const starter=()=>({activePlan:0,assignees:['Christophe'],companies:[],appointments:[],plans:[{id:uid(),title:'Plan de travail',buckets:[
  {id:uid(),title:'À faire',tasks:[{id:uid(),title:'Préparer la liste des achats',notes:'Exemple de tâche modifiable.',assignee:'Christophe',company:'',dueDate:'',priority:'normal',progress:'todo',linkName:'',linkUrl:''}]},
  {id:uid(),title:'En cours',tasks:[]},{id:uid(),title:'Terminé',tasks:[]}
 ]}]});
@@ -36,6 +36,7 @@ function plan(){return db.plans[db.activePlan]||db.plans[0]}
 function ensurePlanData(){
   if(!Array.isArray(db.assignees)) db.assignees=[];
   if(!Array.isArray(db.companies)) db.companies=[];
+  if(!Array.isArray(db.appointments)) db.appointments=[];
   db.plans.forEach(p=>{
     // Migration des anciennes versions : les responsables/entreprises étaient stockés dans chaque plan.
     if(Array.isArray(p.assignees)) p.assignees.forEach(n=>{ if(n && !db.assignees.includes(n)) db.assignees.push(n); });
@@ -93,6 +94,80 @@ function removeChoiceFromList(kind){
   render();
   alert((isAssignee?'Responsable':'Entreprise')+' retiré(e) de la liste de choix : '+realName);
 }
+
+function appointments(){ ensurePlanData(); return db.appointments; }
+function sortedAppointments(){
+  return appointments().slice().sort((a,b)=>{
+    const da=String(a.date||'9999-99-99').localeCompare(String(b.date||'9999-99-99'));
+    if(da) return da;
+    const ta=String(a.time||'99:99').localeCompare(String(b.time||'99:99'));
+    if(ta) return ta;
+    return String(a.company||'').localeCompare(String(b.company||''),'fr',{sensitivity:'base'});
+  });
+}
+function appointmentsByDate(){
+  const map={};
+  appointments().forEach(a=>{ if(a.date){ (map[a.date] ||= []).push(a); } });
+  Object.values(map).forEach(arr=>arr.sort((a,b)=>String(a.time||'99:99').localeCompare(String(b.time||'99:99'))));
+  return map;
+}
+function hasAppointments(){ return appointments().length>0; }
+function hasAppointmentToday(){ return appointments().some(a=>a.date===today()); }
+function appointmentTargetDate(){
+  const list=sortedAppointments();
+  const td=today();
+  const todayAppt=list.find(a=>a.date===td);
+  if(todayAppt) return td;
+  const future=list.find(a=>a.date && a.date>=td);
+  return future?.date || list[0]?.date || td;
+}
+function setCalendarDate(dateStr){
+  const [y,m,d]=String(dateStr||today()).split('-').map(Number);
+  calendarCursor=new Date(y||new Date().getFullYear(), (m||1)-1, d||1);
+}
+function openAppointmentDay(){
+  setCalendarDate(appointmentTargetDate());
+  calendarMode='day';
+  view='calendar';
+  render();
+}
+function appointmentDotHtml(){
+  if(!hasAppointments()) return '';
+  return `<button type="button" class="appointmentDot ${hasAppointmentToday()?'blink':''}" title="Voir les RDV" aria-label="Voir les RDV">●</button>`;
+}
+function appointmentCompanyOptions(selected=''){
+  ensurePlanData();
+  const names=[...db.companies].filter(Boolean).sort((a,b)=>String(a).localeCompare(String(b),'fr',{sensitivity:'base'}));
+  if(selected && !names.includes(selected)) names.unshift(selected);
+  if(!names.length) return '<option value="">Aucune entreprise disponible</option>';
+  return names.map(n=>`<option value="${esc(n)}" ${n===selected?'selected':''}>${esc(n)}</option>`).join('');
+}
+function appointmentLabel(a){
+  const time=a.time?` ${esc(a.time)}`:'';
+  const title=a.title?` — ${esc(a.title)}`:'';
+  return `🟣${time} ${esc(a.company||'RDV')}${title}`;
+}
+function openAppointmentDialog(id='', date=''){
+  ensurePlanData();
+  const existing=id?appointments().find(a=>a.id===id):null;
+  $('appointmentDialogTitle').textContent=existing?'Modifier le RDV':'Nouveau RDV';
+  $('appointmentId').value=existing?.id||'';
+  $('appointmentCompany').innerHTML=appointmentCompanyOptions(existing?.company||'');
+  $('appointmentDate').value=existing?.date||date||dateKey(calendarCursor)||today();
+  $('appointmentTime').value=existing?.time||'';
+  $('appointmentTitle').value=existing?.title||'';
+  $('appointmentNotes').value=existing?.notes||'';
+  $('deleteAppointmentBtn').style.visibility=existing?'visible':'hidden';
+  $('appointmentDialog').showModal();
+}
+function deleteAppointment(id){
+  const appt=appointments().find(a=>a.id===id);
+  if(!appt) return;
+  if(!confirm('Supprimer ce RDV ?')) return;
+  db.appointments=db.appointments.filter(a=>a.id!==id);
+  render();
+}
+
 function allTasks(){return plan().buckets.flatMap(b=>b.tasks.map(t=>({...t,bucket:b}))) }
 function allPlanTasks(){return db.plans.flatMap((p,planIndex)=>(p.buckets||[]).flatMap(b=>(b.tasks||[]).map(t=>({...t,bucket:b,plan:p,planIndex}))))}
 function isLate(t){return t.dueDate && t.progress!=='done' && t.dueDate<today()}
@@ -161,7 +236,7 @@ function linkUrl(u){
 function linksHtml(t){
   const url=linkUrl(t.linkUrl||(t.links&&t.links[0]&&t.links[0].url)); const name=t.linkName||(t.links&&t.links[0]&&t.links[0].name); if(!url) return ''; return `<div class="taskLinksPreview"><a class="taskLink" href="${esc(url)}" target="_blank" rel="noopener noreferrer">🔗 ${esc(name||'Ouvrir le lien')}</a></div>`;
 }
-function card(t,bid){const el=document.createElement('article');el.className='card priority-'+(t.priority||'normal')+' '+(t.progress==='done'?'done':'');el.draggable=true;el.ondragstart=()=>drag=t.id;el.onclick=()=>openTask(t.id,bid);el.innerHTML=`<h3>${t.progress==='done'?'✅ ':''}${esc(t.title)}</h3><div class="meta">${t.priority!=='low'?`<span class="pill ${t.priority}">${prio(t.priority)}</span>`:''}${t.dueDate?`<span class="pill ${isLate(t)?'late':''}">📅 ${esc(t.dueDate)}</span>`:''}${t.assignee?`<span class="pill">👤 ${esc(t.assignee)}</span>`:''}${t.company?`<span class="pill">🏢 ${esc(t.company)}</span>`:''}</div>${linksHtml(t)}`;el.querySelectorAll('a.taskLink').forEach(a=>a.onclick=e=>e.stopPropagation());return el}
+function card(t,bid){const el=document.createElement('article');el.className='card priority-'+(t.priority||'normal')+' '+(t.progress==='done'?'done':'');el.draggable=true;el.ondragstart=()=>drag=t.id;el.onclick=()=>openTask(t.id,bid);el.innerHTML=`${appointmentDotHtml()}<h3>${t.progress==='done'?'✅ ':''}${esc(t.title)}</h3><div class="meta">${t.priority!=='low'?`<span class="pill ${t.priority}">${prio(t.priority)}</span>`:''}${t.dueDate?`<span class="pill ${isLate(t)?'late':''}">📅 ${esc(t.dueDate)}</span>`:''}${t.assignee?`<span class="pill">👤 ${esc(t.assignee)}</span>`:''}${t.company?`<span class="pill">🏢 ${esc(t.company)}</span>`:''}</div>${linksHtml(t)}`;el.querySelectorAll('a.taskLink').forEach(a=>a.onclick=e=>e.stopPropagation());return el}
 function listPriorityRank(p){return {urgent:0,high:1,normal:2,low:3}[p||'normal'] ?? 2}
 function listDateRank(d){return d ? d : '9999-99-99'}
 function renderList(){
@@ -178,7 +253,7 @@ function renderList(){
     if(ea) return ea;
     return String(a.title||'').localeCompare(String(b.title||''),'fr',{sensitivity:'base'});
   });
-  const rows=tasks.map(t=>`<tr class="taskrow priority-${t.priority||'normal'}" data-id="${t.id}"><td>${t.progress==='done'?'✅':'⬜'} ${esc(t.title)}</td><td>${esc(t.bucket.title)}</td><td>${esc(t.assignee||'')}</td><td>${esc(t.company||'')}</td><td>${esc(t.dueDate||'')}</td><td>${prio(t.priority)}</td></tr>`).join('');
+  const rows=tasks.map(t=>`<tr class="taskrow priority-${t.priority||'normal'}" data-id="${t.id}"><td class="taskTitleCell">${appointmentDotHtml()} ${t.progress==='done'?'✅':'⬜'} ${esc(t.title)}</td><td>${esc(t.bucket.title)}</td><td>${esc(t.assignee||'')}</td><td>${esc(t.company||'')}</td><td>${esc(t.dueDate||'')}</td><td>${prio(t.priority)}</td></tr>`).join('');
   $('listView').innerHTML=`
     <div class="listQuickFilters">
       <label><input id="listUrgentFilter" type="checkbox" ${listFilterUrgent?'checked':''}> 🔴 Urgentes</label>
@@ -198,8 +273,39 @@ function renderCalendar(){
   allTasks().filter(t=>t.dueDate&&pass(t)).forEach(t=>{
     (tasksByDate[t.dueDate] ||= []).push(t);
   });
+  const apptsByDate=appointmentsByDate();
+  const apptHtml=(date)=> (apptsByDate[date]||[]).map(a=>`<div class="calAppt" data-appt="${a.id}" title="${esc(a.company||'RDV')}">${appointmentLabel(a)}</div>`).join('');
+  const switchHtml=(mode)=>`<div class="calendarSwitch"><button id="calMonthBtn" class="${mode==='month'?'activeSwitch':''}">Mois</button><button id="calWeekBtn" class="${mode==='week'?'activeSwitch':''}">Semaine</button><button id="calDayBtn" class="${mode==='day'?'activeSwitch':''}">Jour</button></div>`;
 
-  if(calendarMode==='week'){
+  if(calendarMode==='day'){
+    const key=dateKey(calendarCursor);
+    const title=calendarCursor.toLocaleDateString('fr-FR',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
+    const tasks=tasksByDate[key]||[];
+    const appts=apptsByDate[key]||[];
+    root.innerHTML=`
+      <div class="calendarHeader">
+        <button id="calPrevBtn">← Jour précédent</button>
+        <h2>${esc(title.charAt(0).toUpperCase()+title.slice(1))}</h2>
+        <button id="calNextBtn">Jour suivant →</button>
+        <button id="calTodayBtn">Aujourd'hui</button>
+        <button id="addAppointmentTopBtn" class="appointmentAddBtn">+ RDV</button>
+        ${switchHtml('day')}
+      </div>
+      <div class="calendarDayView">
+        <section class="dayPanel">
+          <h3>🟣 RDV</h3>
+          <div class="appointmentList">${appts.length?appts.map(a=>`<div class="appointmentItem"><div><strong>${appointmentLabel(a)}</strong>${a.notes?`<div class="small">${esc(a.notes)}</div>`:''}</div><div class="appointmentActions"><button class="editAppointmentBtn" data-appt="${a.id}">Modifier</button><button class="deleteAppointmentBtnSmall" data-appt="${a.id}">Supprimer</button></div></div>`).join(''):'<p class="emptyDay">Aucun RDV ce jour.</p>'}</div>
+        </section>
+        <section class="dayPanel">
+          <h3>📋 Tâches du jour</h3>
+          <div class="calTasks dayTasks">${tasks.length?tasks.map(t=>`<div class="calTask priority-${t.priority||'normal'} ${isLate(t)?'lateTask':''}" data-id="${t.id}" title="${esc(t.title)}">${t.progress==='done'?'✅ ':''}${esc(t.title)}</div>`).join(''):'<p class="emptyDay">Aucune tâche ce jour.</p>'}</div>
+        </section>
+      </div>`;
+    $('calPrevBtn').onclick=()=>{calendarCursor.setDate(calendarCursor.getDate()-1);renderCalendar()};
+    $('calNextBtn').onclick=()=>{calendarCursor.setDate(calendarCursor.getDate()+1);renderCalendar()};
+    $('calTodayBtn').onclick=()=>{calendarCursor=new Date();renderCalendar()};
+    $('addAppointmentTopBtn').onclick=()=>openAppointmentDialog('',key);
+  }else if(calendarMode==='week'){
     const cursor=new Date(calendarCursor);
     const mondayOffset=(cursor.getDay()+6)%7;
     const weekStart=new Date(cursor);
@@ -216,8 +322,8 @@ function renderCalendar(){
       const tasks=tasksByDate[key]||[];
       const dayName=d.toLocaleDateString('fr-FR',{weekday:'long'});
       days.push(`<div class="calCell weekCell ${isToday?'todayCell':''}">
-        <div class="calDate weekDate"><div><strong>${esc(dayName.charAt(0).toUpperCase()+dayName.slice(1))}</strong><br><span>${d.toLocaleDateString('fr-FR')}</span></div><button class="calAdd" data-date="${key}" title="Ajouter une tâche à cette date">+</button></div>
-        <div class="calTasks">${tasks.map(t=>`<div class="calTask priority-${t.priority||'normal'} ${isLate(t)?'lateTask':''}" data-id="${t.id}" title="${esc(t.title)}">${t.progress==='done'?'✅ ':''}${esc(t.title)}</div>`).join('') || '<div class="emptyDay">Aucune tâche</div>'}</div>
+        <div class="calDate weekDate"><div><strong>${esc(dayName.charAt(0).toUpperCase()+dayName.slice(1))}</strong><br><span>${d.toLocaleDateString('fr-FR')}</span></div><div class="calCellBtns"><button class="calAddRdv" data-date="${key}" title="Ajouter un RDV">RDV</button><button class="calAdd" data-date="${key}" title="Ajouter une tâche à cette date">+</button></div></div>
+        <div class="calTasks">${apptHtml(key)}${tasks.map(t=>`<div class="calTask priority-${t.priority||'normal'} ${isLate(t)?'lateTask':''}" data-id="${t.id}" title="${esc(t.title)}">${t.progress==='done'?'✅ ':''}${esc(t.title)}</div>`).join('') || (!apptHtml(key)?'<div class="emptyDay">Aucune tâche</div>':'')}</div>
       </div>`);
     }
     root.innerHTML=`
@@ -226,17 +332,14 @@ function renderCalendar(){
         <h2>${esc(title)}</h2>
         <button id="calNextBtn">Semaine suivante →</button>
         <button id="calTodayBtn">Aujourd'hui</button>
-        <div class="calendarSwitch">
-          <button id="calMonthBtn">Mois</button>
-          <button id="calWeekBtn" class="activeSwitch">Semaine</button>
-        </div>
+        <button id="addAppointmentTopBtn" class="appointmentAddBtn">+ RDV</button>
+        ${switchHtml('week')}
       </div>
       <div class="calendarWeek">${days.join('')}</div>`;
     $('calPrevBtn').onclick=()=>{calendarCursor.setDate(calendarCursor.getDate()-7);renderCalendar()};
     $('calNextBtn').onclick=()=>{calendarCursor.setDate(calendarCursor.getDate()+7);renderCalendar()};
     $('calTodayBtn').onclick=()=>{calendarCursor=new Date();renderCalendar()};
-    $('calMonthBtn').onclick=()=>{calendarMode='month';calendarCursor.setDate(1);renderCalendar()};
-    $('calWeekBtn').onclick=()=>{calendarMode='week';renderCalendar()};
+    $('addAppointmentTopBtn').onclick=()=>openAppointmentDialog('',dateKey(calendarCursor));
   }else{
     const y=calendarCursor.getFullYear();
     const m=calendarCursor.getMonth();
@@ -253,8 +356,8 @@ function renderCalendar(){
       const isToday=key===today();
       const tasks=tasksByDate[key]||[];
       days.push(`<div class="calCell ${inMonth?'':'otherMonth'} ${isToday?'todayCell':''}">
-        <div class="calDate"><strong>${d.getDate()}</strong><button class="calAdd" data-date="${key}" title="Ajouter une tâche à cette date">+</button></div>
-        <div class="calTasks">${tasks.map(t=>`<div class="calTask priority-${t.priority||'normal'} ${isLate(t)?'lateTask':''}" data-id="${t.id}" title="${esc(t.title)}">${t.progress==='done'?'✅ ':''}${esc(t.title)}</div>`).join('')}</div>
+        <div class="calDate"><strong>${d.getDate()}</strong><div class="calCellBtns"><button class="calAddRdv" data-date="${key}" title="Ajouter un RDV">RDV</button><button class="calAdd" data-date="${key}" title="Ajouter une tâche à cette date">+</button></div></div>
+        <div class="calTasks">${apptHtml(key)}${tasks.map(t=>`<div class="calTask priority-${t.priority||'normal'} ${isLate(t)?'lateTask':''}" data-id="${t.id}" title="${esc(t.title)}">${t.progress==='done'?'✅ ':''}${esc(t.title)}</div>`).join('')}</div>
       </div>`);
     }
     root.innerHTML=`
@@ -263,10 +366,8 @@ function renderCalendar(){
         <h2>${esc(monthName.charAt(0).toUpperCase()+monthName.slice(1))}</h2>
         <button id="calNextBtn">Mois suivant →</button>
         <button id="calTodayBtn">Aujourd'hui</button>
-        <div class="calendarSwitch">
-          <button id="calMonthBtn" class="activeSwitch">Mois</button>
-          <button id="calWeekBtn">Semaine</button>
-        </div>
+        <button id="addAppointmentTopBtn" class="appointmentAddBtn">+ RDV</button>
+        ${switchHtml('month')}
       </div>
       <div class="calendarMonth">
         <div class="calWeekday">Lun</div><div class="calWeekday">Mar</div><div class="calWeekday">Mer</div><div class="calWeekday">Jeu</div><div class="calWeekday">Ven</div><div class="calWeekday">Sam</div><div class="calWeekday">Dim</div>
@@ -275,11 +376,17 @@ function renderCalendar(){
     $('calPrevBtn').onclick=()=>{calendarCursor.setMonth(calendarCursor.getMonth()-1);renderCalendar()};
     $('calNextBtn').onclick=()=>{calendarCursor.setMonth(calendarCursor.getMonth()+1);renderCalendar()};
     $('calTodayBtn').onclick=()=>{calendarCursor=new Date();calendarCursor.setDate(1);renderCalendar()};
-    $('calMonthBtn').onclick=()=>{calendarMode='month';renderCalendar()};
-    $('calWeekBtn').onclick=()=>{calendarMode='week';calendarCursor=new Date(calendarCursor.getFullYear(),calendarCursor.getMonth(),Math.min(new Date().getDate(),28));renderCalendar()};
+    $('addAppointmentTopBtn').onclick=()=>openAppointmentDialog('',dateKey(calendarCursor));
   }
+  $('calMonthBtn').onclick=()=>{calendarMode='month';calendarCursor.setDate(1);renderCalendar()};
+  $('calWeekBtn').onclick=()=>{calendarMode='week';renderCalendar()};
+  $('calDayBtn').onclick=()=>{calendarMode='day';renderCalendar()};
   document.querySelectorAll('.calTask').forEach(el=>el.onclick=()=>openTask(el.dataset.id));
+  document.querySelectorAll('.calAppt').forEach(el=>el.onclick=()=>openAppointmentDialog(el.dataset.appt));
+  document.querySelectorAll('.editAppointmentBtn').forEach(btn=>btn.onclick=()=>openAppointmentDialog(btn.dataset.appt));
+  document.querySelectorAll('.deleteAppointmentBtnSmall').forEach(btn=>btn.onclick=()=>deleteAppointment(btn.dataset.appt));
   document.querySelectorAll('.calAdd').forEach(btn=>btn.onclick=(e)=>{e.stopPropagation();openTaskOnDate(btn.dataset.date)});
+  document.querySelectorAll('.calAddRdv').forEach(btn=>btn.onclick=(e)=>{e.stopPropagation();openAppointmentDialog('',btn.dataset.date)});
 }
 function dateKey(d){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
 function openTaskOnDate(date){openTask(null,plan().buckets[0].id);$('taskDueDate').value=date}
@@ -291,7 +398,7 @@ function groupKeyValue(t, field){
 function taskRowForGroup(t, field){
   return `<div class="groupTask priority-${t.priority||'normal'}" data-plan="${t.planIndex}" data-id="${t.id}">
     <div>
-      <strong>${t.progress==='done'?'✅ ':''}${esc(t.title)}</strong>
+      <strong>${appointmentDotHtml()} ${t.progress==='done'?'✅ ':''}${esc(t.title)}</strong>
       <div class="small">Plan : ${esc(t.plan?.title||'')} · Colonne : ${esc(t.bucket?.title||'')}</div>
     </div>
     <div class="groupMeta">
@@ -417,7 +524,7 @@ function renderPriorityDetail(priority){
 function taskRowForPriority(t){
   return `<div class="groupTask priority-${t.priority||'normal'}" data-plan="${t.planIndex}" data-id="${t.id}">
     <div>
-      <strong>${t.progress==='done'?'✅ ':''}${esc(t.title)}</strong>
+      <strong>${appointmentDotHtml()} ${t.progress==='done'?'✅ ':''}${esc(t.title)}</strong>
       <div class="small">Plan : ${esc(t.plan?.title||'')} · Colonne : ${esc(t.bucket?.title||'')}</div>
     </div>
     <div class="groupMeta">
@@ -502,6 +609,29 @@ function updateTaskBucketOptions(planIndex, selectedBucketId=''){
   $('taskBucket').value=exists?selectedBucketId:(p.buckets?.[0]?.id||'');
 }
 function checklistFrom(txt){return txt.split('\n').map(s=>s.trim()).filter(Boolean).map(s=>({done:/^\[x\]/i.test(s),text:s.replace(/^\[x\]\s*/i,'')}))}
+
+$('appointmentForm').onsubmit=e=>{
+  e.preventDefault();
+  ensurePlanData();
+  const id=$('appointmentId').value||uid();
+  const a={id,company:$('appointmentCompany').value.trim(),date:$('appointmentDate').value,time:$('appointmentTime').value,title:$('appointmentTitle').value.trim(),notes:$('appointmentNotes').value.trim(),color:'violet'};
+  if(!a.company){ alert('Choisis une entreprise pour le RDV.'); return; }
+  if(!a.date){ alert('Choisis une date pour le RDV.'); return; }
+  db.appointments=db.appointments.filter(x=>x.id!==id);
+  db.appointments.push(a);
+  $('appointmentDialog').close();
+  calendarMode='day';
+  setCalendarDate(a.date);
+  view='calendar';
+  render();
+};
+$('cancelAppointmentDialog').onclick=()=>$('appointmentDialog').close();
+$('deleteAppointmentBtn').onclick=()=>{const id=$('appointmentId').value;if(id){deleteAppointment(id);$('appointmentDialog').close();}};
+document.addEventListener('click', (e)=>{
+  const dot=e.target.closest('.appointmentDot');
+  if(dot){ e.preventDefault(); e.stopPropagation(); openAppointmentDay(); }
+});
+
 $('taskForm').onsubmit=e=>{e.preventDefault();const id=$('taskId').value||uid();const found=findTaskGlobal(id);const old=found.t;const targetPlanIndex=$('taskPlan')?Number($('taskPlan').value):db.activePlan;const targetPlan=db.plans[targetPlanIndex]||plan();const t={id,title:$('taskTitle').value.trim(),notes:$('taskNotes').value.trim(),assignee:$('taskAssignee').value.trim(),company:$('taskCompany').value.trim(),dueDate:$('taskDueDate').value,priority:$('taskPriority').value,progress:$('taskProgress').value,linkName:$('taskLinkName').value.trim(),linkUrl:$('taskLinkUrl').value.trim()};db.plans.forEach(p=>(p.buckets||[]).forEach(b=>b.tasks=b.tasks.filter(x=>x.id!==id)));const targetBucket=(targetPlan.buckets||[]).find(b=>b.id===$('taskBucket').value)||targetPlan.buckets[0]; if(old){targetBucket.tasks.push(t)}else{targetBucket.tasks.unshift(t)}db.activePlan=targetPlanIndex;$('taskDialog').close();render()};
 $('deleteTaskBtn').onclick=()=>{const id=$('taskId').value;if(confirm('Supprimer cette tâche ?')){plan().buckets.forEach(b=>b.tasks=b.tasks.filter(t=>t.id!==id));$('taskDialog').close();render()}};
 $('cancelDialog').onclick=()=>$('taskDialog').close();
@@ -522,7 +652,7 @@ $('planTitle').onchange=e=>{plan().title=e.target.value;render()};$('addBucketBt
 
 // ---------------- GOOGLE DRIVE SYNC ----------------
 
-const VERSION_LABEL = 'V40';
+const VERSION_LABEL = 'V40.3';
 let driveConnectedForBanner = false;
 let lastSaveTimeForBanner = localStorage.getItem('mon-organiseur-last-save-time') || '--';
 
