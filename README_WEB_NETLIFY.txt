@@ -62,3 +62,6 @@ V36.2 : nouvelles fonctions
 
 
 V36.2 : bandeau supérieur réduit et boutons Responsable / Entreprise alignés sur une seule ligne.
+
+
+V40.5 RDV : correction des ronds violets fantômes. Seuls les RDV créés avec la fenêtre RDV V40.5 déclenchent le rond violet. Les anciens RDV de test sont ignorés.

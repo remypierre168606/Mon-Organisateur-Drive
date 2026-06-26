@@ -97,9 +97,15 @@ function removeChoiceFromList(kind){
 
 function appointments(){ ensurePlanData(); return db.appointments; }
 function validAppointments(){
-  // Un RDV est considéré comme réel seulement s'il a une date ET une entreprise.
-  // Cela évite d'afficher le rond violet à cause d'anciens RDV incomplets ou vides.
-  return appointments().filter(a=>a && String(a.date||'').trim() && String(a.company||'').trim());
+  // V40.5 : seuls les RDV créés/enregistrés avec la nouvelle fenêtre RDV sont actifs.
+  // Les anciens RDV de test ou RDV incomplets des versions précédentes sont ignorés,
+  // ce qui empêche les ronds violets/clignotants fantômes sur toutes les tâches.
+  return appointments().filter(a=>
+    a &&
+    a.rdvActive === true &&
+    /^\d{4}-\d{2}-\d{2}$/.test(String(a.date||'').trim()) &&
+    String(a.company||'').trim()
+  );
 }
 function sortedAppointments(){
   return validAppointments().slice().sort((a,b)=>{
@@ -619,7 +625,7 @@ $('appointmentForm').onsubmit=e=>{
   e.preventDefault();
   ensurePlanData();
   const id=$('appointmentId').value||uid();
-  const a={id,company:$('appointmentCompany').value.trim(),date:$('appointmentDate').value,time:$('appointmentTime').value,title:$('appointmentTitle').value.trim(),notes:$('appointmentNotes').value.trim(),color:'violet'};
+  const a={id,company:$('appointmentCompany').value.trim(),date:$('appointmentDate').value,time:$('appointmentTime').value,title:$('appointmentTitle').value.trim(),notes:$('appointmentNotes').value.trim(),color:'violet',rdvActive:true,updatedAt:new Date().toISOString()};
   if(!a.company){ alert('Choisis une entreprise pour le RDV.'); return; }
   if(!a.date){ alert('Choisis une date pour le RDV.'); return; }
   db.appointments=db.appointments.filter(x=>x.id!==id);
@@ -657,7 +663,7 @@ $('planTitle').onchange=e=>{plan().title=e.target.value;render()};$('addBucketBt
 
 // ---------------- GOOGLE DRIVE SYNC ----------------
 
-const VERSION_LABEL = 'V40.4';
+const VERSION_LABEL = 'V40.5';
 let driveConnectedForBanner = false;
 let lastSaveTimeForBanner = localStorage.getItem('mon-organiseur-last-save-time') || '--';
 
