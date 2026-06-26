@@ -96,8 +96,13 @@ function removeChoiceFromList(kind){
 }
 
 function appointments(){ ensurePlanData(); return db.appointments; }
+function validAppointments(){
+  // Un RDV est considéré comme réel seulement s'il a une date ET une entreprise.
+  // Cela évite d'afficher le rond violet à cause d'anciens RDV incomplets ou vides.
+  return appointments().filter(a=>a && String(a.date||'').trim() && String(a.company||'').trim());
+}
 function sortedAppointments(){
-  return appointments().slice().sort((a,b)=>{
+  return validAppointments().slice().sort((a,b)=>{
     const da=String(a.date||'9999-99-99').localeCompare(String(b.date||'9999-99-99'));
     if(da) return da;
     const ta=String(a.time||'99:99').localeCompare(String(b.time||'99:99'));
@@ -107,12 +112,12 @@ function sortedAppointments(){
 }
 function appointmentsByDate(){
   const map={};
-  appointments().forEach(a=>{ if(a.date){ (map[a.date] ||= []).push(a); } });
+  validAppointments().forEach(a=>{ (map[a.date] ||= []).push(a); });
   Object.values(map).forEach(arr=>arr.sort((a,b)=>String(a.time||'99:99').localeCompare(String(b.time||'99:99'))));
   return map;
 }
-function hasAppointments(){ return appointments().length>0; }
-function hasAppointmentToday(){ return appointments().some(a=>a.date===today()); }
+function hasAppointments(){ return validAppointments().length>0; }
+function hasAppointmentToday(){ return validAppointments().some(a=>a.date===today()); }
 function appointmentTargetDate(){
   const list=sortedAppointments();
   const td=today();
@@ -652,7 +657,7 @@ $('planTitle').onchange=e=>{plan().title=e.target.value;render()};$('addBucketBt
 
 // ---------------- GOOGLE DRIVE SYNC ----------------
 
-const VERSION_LABEL = 'V40.3';
+const VERSION_LABEL = 'V40.4';
 let driveConnectedForBanner = false;
 let lastSaveTimeForBanner = localStorage.getItem('mon-organiseur-last-save-time') || '--';
 
