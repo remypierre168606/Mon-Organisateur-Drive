@@ -9,6 +9,8 @@ let db=load(), view=(localStorage.getItem('mon-organiseur-google-client-id')?'bo
 let calendarCursor=new Date();
 calendarCursor.setDate(1);
 let calendarMode='week';
+let listFilterUrgent=false;
+let listFilterHigh=false;
 
 // Variables Google Drive déclarées dès le début pour éviter les erreurs au chargement.
 const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.file';
@@ -160,7 +162,35 @@ function linksHtml(t){
   const url=linkUrl(t.linkUrl||(t.links&&t.links[0]&&t.links[0].url)); const name=t.linkName||(t.links&&t.links[0]&&t.links[0].name); if(!url) return ''; return `<div class="taskLinksPreview"><a class="taskLink" href="${esc(url)}" target="_blank" rel="noopener noreferrer">🔗 ${esc(name||'Ouvrir le lien')}</a></div>`;
 }
 function card(t,bid){const el=document.createElement('article');el.className='card priority-'+(t.priority||'normal')+' '+(t.progress==='done'?'done':'');el.draggable=true;el.ondragstart=()=>drag=t.id;el.onclick=()=>openTask(t.id,bid);el.innerHTML=`<h3>${t.progress==='done'?'✅ ':''}${esc(t.title)}</h3><div class="meta">${t.priority!=='low'?`<span class="pill ${t.priority}">${prio(t.priority)}</span>`:''}${t.dueDate?`<span class="pill ${isLate(t)?'late':''}">📅 ${esc(t.dueDate)}</span>`:''}${t.assignee?`<span class="pill">👤 ${esc(t.assignee)}</span>`:''}${t.company?`<span class="pill">🏢 ${esc(t.company)}</span>`:''}</div>${linksHtml(t)}`;el.querySelectorAll('a.taskLink').forEach(a=>a.onclick=e=>e.stopPropagation());return el}
-function renderList(){const rows=allTasks().filter(pass).map(t=>`<tr class="taskrow priority-${t.priority||'normal'}" data-id="${t.id}"><td>${t.progress==='done'?'✅':'⬜'} ${esc(t.title)}</td><td>${esc(t.bucket.title)}</td><td>${esc(t.assignee||'')}</td><td>${esc(t.company||'')}</td><td>${esc(t.dueDate||'')}</td><td>${prio(t.priority)}</td></tr>`).join('');$('listView').innerHTML=`<table class="listTable"><thead><tr><th>Tâche</th><th>Colonne</th><th>Responsable</th><th>Entreprise</th><th>Date</th><th>Priorité</th></tr></thead><tbody>${rows||'<tr><td>Aucune tâche trouvée.</td></tr>'}</tbody></table>`;document.querySelectorAll('.taskrow').forEach(r=>r.onclick=()=>openTask(r.dataset.id))}
+function listPriorityRank(p){return {urgent:0,high:1,normal:2,low:3}[p||'normal'] ?? 2}
+function listDateRank(d){return d ? d : '9999-99-99'}
+function renderList(){
+  let tasks=allTasks().filter(pass);
+  if(listFilterUrgent || listFilterHigh){
+    tasks=tasks.filter(t=>(listFilterUrgent && (t.priority||'normal')==='urgent') || (listFilterHigh && (t.priority||'normal')==='high'));
+  }
+  tasks.sort((a,b)=>{
+    const pr=listPriorityRank(a.priority)-listPriorityRank(b.priority);
+    if(pr) return pr;
+    const da=listDateRank(a.dueDate).localeCompare(listDateRank(b.dueDate));
+    if(da) return da;
+    const ea=String(a.company||'').localeCompare(String(b.company||''),'fr',{sensitivity:'base'});
+    if(ea) return ea;
+    return String(a.title||'').localeCompare(String(b.title||''),'fr',{sensitivity:'base'});
+  });
+  const rows=tasks.map(t=>`<tr class="taskrow priority-${t.priority||'normal'}" data-id="${t.id}"><td>${t.progress==='done'?'✅':'⬜'} ${esc(t.title)}</td><td>${esc(t.bucket.title)}</td><td>${esc(t.assignee||'')}</td><td>${esc(t.company||'')}</td><td>${esc(t.dueDate||'')}</td><td>${prio(t.priority)}</td></tr>`).join('');
+  $('listView').innerHTML=`
+    <div class="listQuickFilters">
+      <label><input id="listUrgentFilter" type="checkbox" ${listFilterUrgent?'checked':''}> 🔴 Urgentes</label>
+      <label><input id="listHighFilter" type="checkbox" ${listFilterHigh?'checked':''}> 🟠 Hautes</label>
+      <span class="listCount">${tasks.length} tâche(s) affichée(s)</span>
+    </div>
+    <table class="listTable"><thead><tr><th>Tâche</th><th>Colonne</th><th>Responsable</th><th>Entreprise</th><th>Date</th><th>Priorité</th></tr></thead><tbody>${rows||'<tr><td>Aucune tâche trouvée.</td></tr>'}</tbody></table>`;
+  $('listUrgentFilter').onchange=e=>{listFilterUrgent=e.target.checked;render()};
+  $('listHighFilter').onchange=e=>{listFilterHigh=e.target.checked;render()};
+  document.querySelectorAll('.taskrow').forEach(r=>r.onclick=()=>openTask(r.dataset.id));
+}
+
 function renderCalendar(){
   const root=$('calendarView');
   if(!calendarMode) calendarMode='month';
@@ -492,7 +522,7 @@ $('planTitle').onchange=e=>{plan().title=e.target.value;render()};$('addBucketBt
 
 // ---------------- GOOGLE DRIVE SYNC ----------------
 
-const VERSION_LABEL = 'V36.2';
+const VERSION_LABEL = 'V40';
 let driveConnectedForBanner = false;
 let lastSaveTimeForBanner = localStorage.getItem('mon-organiseur-last-save-time') || '--';
 
