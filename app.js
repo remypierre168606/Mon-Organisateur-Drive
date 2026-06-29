@@ -5,7 +5,7 @@ const starter=()=>({activePlan:0,assignees:['Christophe'],companies:[],appointme
  {id:uid(),title:'À faire',tasks:[{id:uid(),title:'Préparer la liste des achats',notes:'Exemple de tâche modifiable.',assignee:'Christophe',company:'',dueDate:'',startDate:'',endDate:'',priority:'normal',progress:'todo',linkName:'',linkUrl:''}]},
  {id:uid(),title:'En cours',tasks:[]},{id:uid(),title:'Terminé',tasks:[]}
 ]}]});
-let db=load(), view=(localStorage.getItem('mon-organiseur-google-client-id')?'board':'settings'), drag=null, dragColumn=null;
+let db=load(), view=(localStorage.getItem('mon-organiseur-google-client-id')?'board':'settings'), drag=null, dragColumn=null, calendarTaskDrag=null;
 let calendarCursor=new Date();
 calendarCursor.setDate(1);
 let calendarMode='week';
@@ -329,6 +329,50 @@ function calendarTaskDateLabel(t){
   return '';
 }
 
+function parseDateOnly(v){
+  if(!validDateStr(v)) return null;
+  const [y,m,d]=String(v).split('-').map(Number);
+  return new Date(y,m-1,d);
+}
+function addDaysToDateStr(dateStr, days){
+  const d=parseDateOnly(dateStr);
+  if(!d) return dateStr;
+  d.setDate(d.getDate()+days);
+  return dateKey(d);
+}
+function daysBetweenDateStr(a,b){
+  const da=parseDateOnly(a), dbb=parseDateOnly(b);
+  if(!da || !dbb) return 0;
+  return Math.round((dbb-da)/86400000);
+}
+function moveTaskToCalendarDate(taskId,targetDate){
+  if(!validDateStr(targetDate)) return;
+  const found=findTaskGlobal(taskId);
+  const t=found.t;
+  if(!t) return;
+  const oldStart=validDateStr(t.startDate)?t.startDate:(validDateStr(t.endDate)?t.endDate:(validDateStr(t.dueDate)?t.dueDate:targetDate));
+  const oldEnd=validDateStr(t.endDate)?t.endDate:(validDateStr(t.dueDate)?t.dueDate:oldStart);
+  const duration=Math.max(0, daysBetweenDateStr(oldStart, oldEnd));
+  const newStart=targetDate;
+  const newEnd=addDaysToDateStr(newStart, duration);
+  t.startDate=newStart;
+  t.endDate=newEnd;
+  t.dueDate=newEnd; // Date de fin = échéance
+  render();
+}
+function attachCalendarTaskDnD(){
+  document.querySelectorAll('.calTask').forEach(el=>{
+    el.draggable=true;
+    el.ondragstart=e=>{calendarTaskDrag=el.dataset.id; drag=null; dragColumn=null; e.dataTransfer.effectAllowed='move';};
+    el.onclick=()=>openTask(el.dataset.id);
+  });
+  document.querySelectorAll('[data-cal-drop-date]').forEach(zone=>{
+    zone.ondragover=e=>{if(calendarTaskDrag){e.preventDefault();zone.classList.add('calendarDropOver')}};
+    zone.ondragleave=()=>zone.classList.remove('calendarDropOver');
+    zone.ondrop=e=>{if(calendarTaskDrag){e.preventDefault();zone.classList.remove('calendarDropOver');const id=calendarTaskDrag;calendarTaskDrag=null;moveTaskToCalendarDate(id,zone.dataset.calDropDate);}};
+  });
+}
+
 function renderCalendar(){
   const root=$('calendarView');
   if(!calendarMode) calendarMode='month';
@@ -357,14 +401,14 @@ function renderCalendar(){
         ${rdvOnlyHtml()}
         ${switchHtml('day')}
       </div>
-      <div class="calendarDayView">
+      <div class="calendarDayView" data-cal-drop-date="${key}">
         <section class="dayPanel">
           <h3>🟣 RDV</h3>
           <div class="appointmentList">${appts.length?appts.map(a=>`<div class="appointmentItem ${appointmentShouldBlink(a)?'blink':''}"><div><strong>${appointmentLabel(a)}</strong>${a.notes?`<div class="small">${esc(a.notes)}</div>`:''}</div><div class="appointmentActions"><button class="editAppointmentBtn" data-appt="${a.id}">Modifier</button><button class="deleteAppointmentBtnSmall" data-appt="${a.id}">Supprimer</button></div></div>`).join(''):'<p class="emptyDay">Aucun RDV ce jour.</p>'}</div>
         </section>
         <section class="dayPanel">
           <h3>📋 Tâches du jour</h3>
-          <div class="calTasks dayTasks">${tasks.length?tasks.map(t=>`<div class="calTask priority-${t.priority||'normal'} ${isLate(t)?'lateTask':''}" data-id="${t.id}" title="${esc(t.title)}">${t.progress==='done'?'✅ ':''}${esc(t.title)}${calendarTaskDateLabel(t)}</div>`).join(''):'<p class="emptyDay">Aucune tâche ce jour.</p>'}</div>
+          <div class="calTasks dayTasks" data-cal-drop-date="${key}">${tasks.length?tasks.map(t=>`<div class="calTask priority-${t.priority||'normal'} ${isLate(t)?'lateTask':''}" data-id="${t.id}" title="${esc(t.title)}">${t.progress==='done'?'✅ ':''}${esc(t.title)}${calendarTaskDateLabel(t)}</div>`).join(''):'<p class="emptyDay">Aucune tâche ce jour.</p>'}</div>
         </section>
       </div>`;
     $('calPrevBtn').onclick=()=>{calendarCursor.setDate(calendarCursor.getDate()-1);renderCalendar()};
@@ -387,7 +431,7 @@ function renderCalendar(){
       const isToday=key===today();
       const tasks=tasksForCalendar(key);
       const dayName=d.toLocaleDateString('fr-FR',{weekday:'long'});
-      days.push(`<div class="calCell weekCell ${isToday?'todayCell':''}">
+      days.push(`<div class="calCell weekCell ${isToday?'todayCell':''}" data-cal-drop-date="${key}">
         <div class="calDate weekDate"><div><strong>${esc(dayName.charAt(0).toUpperCase()+dayName.slice(1))}</strong><br><span>${d.toLocaleDateString('fr-FR')}</span></div><div class="calCellBtns"><button class="calAddRdv" data-date="${key}" title="Ajouter un RDV">RDV</button><button class="calAdd" data-date="${key}" title="Ajouter une tâche à cette date">+</button></div></div>
         <div class="calTasks">${apptHtml(key)}${tasks.map(t=>`<div class="calTask priority-${t.priority||'normal'} ${isLate(t)?'lateTask':''}" data-id="${t.id}" title="${esc(t.title)}">${t.progress==='done'?'✅ ':''}${esc(t.title)}${calendarTaskDateLabel(t)}</div>`).join('') || (!apptHtml(key)?'<div class="emptyDay">Aucune tâche</div>':'')}</div>
       </div>`);
@@ -422,7 +466,7 @@ function renderCalendar(){
       const inMonth=d.getMonth()===m;
       const isToday=key===today();
       const tasks=tasksForCalendar(key);
-      days.push(`<div class="calCell ${inMonth?'':'otherMonth'} ${isToday?'todayCell':''}">
+      days.push(`<div class="calCell ${inMonth?'':'otherMonth'} ${isToday?'todayCell':''}" data-cal-drop-date="${key}">
         <div class="calDate"><strong>${d.getDate()}</strong><div class="calCellBtns"><button class="calAddRdv" data-date="${key}" title="Ajouter un RDV">RDV</button><button class="calAdd" data-date="${key}" title="Ajouter une tâche à cette date">+</button></div></div>
         <div class="calTasks">${apptHtml(key)}${tasks.map(t=>`<div class="calTask priority-${t.priority||'normal'} ${isLate(t)?'lateTask':''}" data-id="${t.id}" title="${esc(t.title)}">${t.progress==='done'?'✅ ':''}${esc(t.title)}${calendarTaskDateLabel(t)}</div>`).join('')}</div>
       </div>`);
@@ -451,7 +495,7 @@ function renderCalendar(){
   $('calMonthBtn').onclick=()=>{calendarMode='month';calendarCursor.setDate(1);renderCalendar()};
   $('calWeekBtn').onclick=()=>{calendarMode='week';renderCalendar()};
   $('calDayBtn').onclick=()=>{calendarMode='day';renderCalendar()};
-  document.querySelectorAll('.calTask').forEach(el=>el.onclick=()=>openTask(el.dataset.id));
+  attachCalendarTaskDnD();
   document.querySelectorAll('.calAppt').forEach(el=>el.onclick=()=>openAppointmentDialog(el.dataset.appt));
   document.querySelectorAll('.editAppointmentBtn').forEach(btn=>btn.onclick=()=>openAppointmentDialog(btn.dataset.appt));
   document.querySelectorAll('.deleteAppointmentBtnSmall').forEach(btn=>btn.onclick=()=>deleteAppointment(btn.dataset.appt));
@@ -459,7 +503,7 @@ function renderCalendar(){
   document.querySelectorAll('.calAddRdv').forEach(btn=>btn.onclick=(e)=>{e.stopPropagation();openAppointmentDialog('',btn.dataset.date)});
 }
 function dateKey(d){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
-function openTaskOnDate(date){openTask(null,plan().buckets[0].id);$('taskDueDate').value=date;if($('taskStartDate'))$('taskStartDate').value=date;if($('taskEndDate'))$('taskEndDate').value=date}
+function openTaskOnDate(date){openTask(null,plan().buckets[0].id);if($('taskStartDate'))$('taskStartDate').value=date;if($('taskEndDate'))$('taskEndDate').value=date;if($('taskDueDate'))$('taskDueDate').value=date}
 
 function groupKeyValue(t, field){
   const empty=field==='assignee'?'Aucun responsable':'Aucune entreprise';
@@ -655,9 +699,10 @@ function openTask(id,bid){
   $('taskNotes').value=t?.notes||'';
   $('taskAssignee').innerHTML=assigneeOptions(t?.assignee||'');
   $('taskCompany').innerHTML=companyOptions(t?.company||'');
-  $('taskDueDate').value=t?.dueDate||'';
+  const taskEndValue=t?.endDate||t?.dueDate||'';
+  if($('taskDueDate')) $('taskDueDate').value=taskEndValue;
   if($('taskStartDate')) $('taskStartDate').value=t?.startDate||'';
-  if($('taskEndDate')) $('taskEndDate').value=t?.endDate||t?.dueDate||'';
+  if($('taskEndDate')) $('taskEndDate').value=taskEndValue;
   $('taskPriority').value=t?.priority||'normal';
   $('taskProgress').value=t?.progress||'todo';
   $('taskLinkName').value=(t?.linkName||t?.links?.[0]?.name||'');
@@ -672,7 +717,7 @@ function openTask(id,bid){
     $('taskBucket').innerHTML=plan().buckets.map(bb=>`<option value="${bb.id}">${esc(bb.title)}</option>`).join('');
   }
   $('deleteTaskBtn').style.visibility=id?'visible':'hidden';
-  if($('taskEndDate') && $('taskDueDate')){ $('taskEndDate').onchange=()=>{ if($('taskEndDate').value) $('taskDueDate').value=$('taskEndDate').value; }; }
+  if($('taskEndDate') && $('taskDueDate')){ $('taskEndDate').onchange=()=>{ $('taskDueDate').value=$('taskEndDate').value||''; }; }
   $('taskDialog').showModal();
 }
 function updateTaskBucketOptions(planIndex, selectedBucketId=''){
@@ -714,8 +759,8 @@ $('taskForm').onsubmit=e=>{
   const targetPlan=db.plans[targetPlanIndex]||plan();
   const startDate=$('taskStartDate')?$('taskStartDate').value:'';
   const endDate=$('taskEndDate')?$('taskEndDate').value:'';
-  // V40.11 : l'échéance correspond toujours à la date de fin calendrier si elle existe.
-  const dueDate=endDate || $('taskDueDate').value;
+  // V40.12 : la date de fin remplace l'échéance.
+  const dueDate=endDate;
   const t={id,title:$('taskTitle').value.trim(),notes:$('taskNotes').value.trim(),assignee:$('taskAssignee').value.trim(),company:$('taskCompany').value.trim(),dueDate,startDate,endDate,priority:$('taskPriority').value,progress:$('taskProgress').value,linkName:$('taskLinkName').value.trim(),linkUrl:$('taskLinkUrl').value.trim()};
   db.plans.forEach(p=>(p.buckets||[]).forEach(b=>b.tasks=b.tasks.filter(x=>x.id!==id)));
   const targetBucket=(targetPlan.buckets||[]).find(b=>b.id===$('taskBucket').value)||targetPlan.buckets[0];
@@ -743,7 +788,7 @@ $('planTitle').onchange=e=>{plan().title=e.target.value;render()};$('addBucketBt
 
 // ---------------- GOOGLE DRIVE SYNC ----------------
 
-const VERSION_LABEL = 'V40.11 RDV + Calendrier';
+const VERSION_LABEL = 'V40.12 Calendrier';
 let driveConnectedForBanner = false;
 let lastSaveTimeForBanner = localStorage.getItem('mon-organiseur-last-save-time') || '--';
 let lastLocalSaveTimeForBanner = localStorage.getItem('mon-organiseur-last-local-save-time') || '--';

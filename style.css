@@ -289,3 +289,9 @@
 /* V40.11 - Clignotement RDV du jour */
 
 .calAppt.blink,.appointmentItem.blink{animation:appointmentBlink 1s infinite}
+
+
+/* V40.12 - Glisser les tâches dans le calendrier */
+.calTask{cursor:grab;user-select:none}
+.calTask:active{cursor:grabbing}
+.calendarDropOver{outline:3px dashed #2563eb!important;outline-offset:-4px;background:#eff6ff!important}
