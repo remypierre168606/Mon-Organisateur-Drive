@@ -971,7 +971,7 @@ function renderCompanyDocument(doc){
   }
   const icon=companyDocumentIcon(doc.mimeType, doc.name);
   box.innerHTML=`<div class="companyDocumentRow">
-    <div><strong>${icon} ${esc(doc.displayName||doc.name||'Document')}</strong><div class="small">${esc(doc.name||'')} · ${esc(doc.mimeType||'type inconnu')} · ${formatFileSize(doc.size)} · ${esc((doc.createdAt||'').slice(0,10))}</div></div>
+    <div><strong>${icon} ${esc(doc.displayName||doc.name||'Document')}</strong><div class="small">Fichier d'origine : ${esc(doc.originalName||doc.name||'')} · ${esc(doc.mimeType||'type inconnu')} · ${formatFileSize(doc.size)} · ${esc((doc.createdAt||'').slice(0,10))}</div></div>
     <div class="companyDocumentActions"><button type="button" id="openCompanyDocumentBtn">👁 Ouvrir</button><button type="button" id="downloadCompanyDocumentBtn">📥 Télécharger</button><button type="button" id="deleteCompanyDocumentBtn" class="dangerButton">❌</button></div>
   </div>`;
   $('openCompanyDocumentBtn').onclick=()=>window.open(doc.webViewLink||('https://drive.google.com/file/d/'+doc.driveId+'/view'),'_blank');
@@ -994,10 +994,16 @@ async function createDriveFolder(name,parentId=''){
 async function getOrCreateDriveFolder(name,parentId=''){
   return await findDriveFolderByName(name,parentId) || await createDriveFolder(name,parentId);
 }
-async function getCompanyDriveFolder(company){
-  const root=await getOrCreateDriveFolder('ORGANISER SAUVEGARDE DOSSIERS');
-  const entreprises=await getOrCreateDriveFolder('Entreprises',root.id);
-  return await getOrCreateDriveFolder(company,entreprises.id);
+async function getOrganiseurDocumentsFolder(){
+  // V43 : tous les documents sont stockés directement dans ce dossier unique.
+  return await getOrCreateDriveFolder('ORGANISEUR_DOSSIERS');
+}
+function uniqueTechnicalFileName(file){
+  const original=String(file?.name||'document');
+  const ext=splitFileName(original)[1] || '';
+  const stamp=new Date().toISOString().replace(/[-:.TZ]/g,'').slice(0,14);
+  const random=(crypto.randomUUID?crypto.randomUUID():String(Date.now()+Math.random())).replace(/[^a-zA-Z0-9]/g,'').slice(0,12);
+  return `DOC_${stamp}_${random}${ext}`;
 }
 async function findDriveFileInFolder(name,parentId){
   const res=await gapi.client.drive.files.list({q:`name='${driveQueryString(name)}' and '${parentId}' in parents and trashed=false`,spaces:'drive',fields:'files(id,name)',pageSize:10});
@@ -1050,18 +1056,11 @@ async function uploadCompanyDocument(){
     if(!file){alert('Choisis d’abord un fichier.');return;}
     if(!await ensureDriveUsable(false)) return;
     status('Envoi du document vers Google Drive...');
-    const folder=await getCompanyDriveFolder(key);
-    let targetName=file.name;
-    const existing=await findDriveFileInFolder(targetName,folder.id);
-    if(existing){
-      const choice=prompt('Un fichier portant ce nom existe déjà dans le dossier de cette entreprise.\n\nTape :\n1 = Remplacer\n2 = Conserver les deux\n3 = Annuler','2');
-      if(choice==='1') await deleteDriveFile(existing.id);
-      else if(choice==='2') targetName=await uniqueFileNameInFolder(targetName,folder.id);
-      else {status('Envoi annulé.');return;}
-    }
+    const folder=await getOrganiseurDocumentsFolder();
+    const targetName=uniqueTechnicalFileName(file);
     const uploaded=await uploadFileToDriveFolder(file,folder.id,targetName);
     const info=ensureCompanyInfo(key);
-    info.document={displayName:$('companyDocumentDisplayName').value.trim()||uploaded.name,name:uploaded.name,mimeType:uploaded.mimeType||file.type,size:uploaded.size||file.size,driveId:uploaded.id,webViewLink:uploaded.webViewLink,webContentLink:uploaded.webContentLink,createdAt:new Date().toISOString()};
+    info.document={displayName:$('companyDocumentDisplayName').value.trim()||file.name,name:uploaded.name,originalName:file.name,mimeType:uploaded.mimeType||file.type,size:uploaded.size||file.size,driveId:uploaded.id,webViewLink:uploaded.webViewLink,webContentLink:uploaded.webContentLink,createdAt:new Date().toISOString(),storageFolder:'ORGANISEUR_DOSSIERS'};
     info.updatedAt=new Date().toISOString();
     db.companyInfos[key]=info;
     input.value='';
@@ -1094,7 +1093,7 @@ function renderTaskDocument(doc){
   if(!doc || !doc.driveId){ box.innerHTML='<p class="small">Aucun document principal.</p>'; return; }
   const icon=companyDocumentIcon(doc.mimeType, doc.name);
   box.innerHTML=`<div class="taskDocumentRow">
-    <div><strong>${icon} ${esc(doc.displayName||doc.name||'Document')}</strong><div class="small">${esc(doc.name||'')} · ${esc(doc.mimeType||'type inconnu')} · ${formatFileSize(doc.size)} · ${esc((doc.createdAt||'').slice(0,10))}</div></div>
+    <div><strong>${icon} ${esc(doc.displayName||doc.name||'Document')}</strong><div class="small">Fichier d'origine : ${esc(doc.originalName||doc.name||'')} · ${esc(doc.mimeType||'type inconnu')} · ${formatFileSize(doc.size)} · ${esc((doc.createdAt||'').slice(0,10))}</div></div>
     <div class="taskDocumentActions"><button type="button" id="openTaskDocumentBtn">👁 Ouvrir</button><button type="button" id="downloadTaskDocumentBtn">📥 Télécharger</button><button type="button" id="deleteTaskDocumentBtn" class="dangerButton">❌</button></div>
   </div>`;
   $('openTaskDocumentBtn').onclick=()=>window.open(doc.webViewLink||('https://drive.google.com/file/d/'+doc.driveId+'/view'),'_blank');
@@ -1105,21 +1104,12 @@ async function uploadTaskDocumentOnly(t){
   const input=$('taskDocumentFile');
   const file=input?.files?.[0];
   if(!file) return t;
-  const company=(t.company||'').trim();
-  if(!company){ alert('Choisis une entreprise avant d’envoyer un document.'); throw new Error('Entreprise absente pour le document'); }
   if(!await ensureDriveUsable(false)) throw new Error('Google Drive non connecté');
   status('Envoi du document de la tâche vers Google Drive...');
-  const folder=await getCompanyDriveFolder(company);
-  let targetName=file.name;
-  const existing=await findDriveFileInFolder(targetName,folder.id);
-  if(existing){
-    const choice=prompt('Un fichier portant ce nom existe déjà dans le dossier de cette entreprise.\n\nTape :\n1 = Remplacer\n2 = Conserver les deux\n3 = Annuler','2');
-    if(choice==='1') await deleteDriveFile(existing.id);
-    else if(choice==='2') targetName=await uniqueFileNameInFolder(targetName,folder.id);
-    else { status('Envoi du document annulé.'); throw new Error('Envoi du document annulé'); }
-  }
+  const folder=await getOrganiseurDocumentsFolder();
+  const targetName=uniqueTechnicalFileName(file);
   const uploaded=await uploadFileToDriveFolder(file,folder.id,targetName);
-  t.document={displayName:$('taskDocumentDisplayName').value.trim()||uploaded.name,name:uploaded.name,mimeType:uploaded.mimeType||file.type,size:uploaded.size||file.size,driveId:uploaded.id,webViewLink:uploaded.webViewLink,webContentLink:uploaded.webContentLink,createdAt:new Date().toISOString()};
+  t.document={displayName:$('taskDocumentDisplayName').value.trim()||file.name,name:uploaded.name,originalName:file.name,mimeType:uploaded.mimeType||file.type,size:uploaded.size||file.size,driveId:uploaded.id,webViewLink:uploaded.webViewLink,webContentLink:uploaded.webContentLink,createdAt:new Date().toISOString(),storageFolder:'ORGANISEUR_DOSSIERS'};
   input.value='';
   renderTaskDocument(t.document);
   status('Document de tâche envoyé sur Google Drive : '+uploaded.name);
@@ -1193,7 +1183,7 @@ if($('companyInfoForm')){
 
 // ---------------- GOOGLE DRIVE SYNC ----------------
 
-const VERSION_LABEL = 'V42.1';
+const VERSION_LABEL = 'V43';
 let driveConnectedForBanner = false;
 let lastSaveTimeForBanner = localStorage.getItem('mon-organiseur-last-save-time') || '--';
 let lastLocalSaveTimeForBanner = localStorage.getItem('mon-organiseur-last-local-save-time') || '--';

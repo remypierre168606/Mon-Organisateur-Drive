@@ -1,13 +1,11 @@
-MON ORGANISEUR DRIVE WEB - V41
+MON ORGANISEUR DRIVE - VERSION V43
 
-Version basée sur V40.12 Calendrier.
+Version basée sur V42.1.
 
-Nouveautés V41 :
-- Tâches terminées archivées automatiquement.
-- Page 📦 Tâches archivées avec restauration ou suppression définitive.
-- Corbeille 🗑️ pour les tâches supprimées, avec restauration et vidage.
-- Fiche entreprise manuelle avec onglets Général, Contacts et Notes.
-- Bouton ⓘ sur les tâches et dans la vue Entreprise pour ouvrir la fiche.
-- Préparation structurelle pour future synchronisation Google Contacts.
+Nouveautés V43 :
+- Les documents envoyés depuis une tâche ou une fiche entreprise vont directement dans le dossier Google Drive ORGANISEUR_DOSSIERS.
+- Le fichier reçoit un nom technique unique sur Google Drive pour éviter les doublons.
+- Le nom affiché dans l’Organiseur reste celui saisi dans la fiche tâche ou entreprise.
+- Le lien Google Drive est conservé pour ouvrir/télécharger/supprimer le document.
 
-Important : l'intégration Google Drive existante est conservée sans modification volontaire.
+Installation : remplacer les fichiers du dépôt GitHub par ceux de ce dossier.
