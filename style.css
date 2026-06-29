@@ -298,3 +298,13 @@
 
 /* V41 - Archives, corbeille et fiches entreprise */
 .archiveList{display:grid;gap:12px;max-width:1100px}.archiveTask{background:white;border:1px solid var(--line);border-radius:14px;padding:14px;box-shadow:var(--shadow);display:grid;gap:8px}.archiveActions{display:flex;gap:8px;flex-wrap:wrap}.groupActions{display:flex;gap:6px;align-items:center;flex-wrap:wrap}.inlineCompanyInfoBtn{border:0;background:#dbeafe;color:#1d4ed8;border-radius:999px;padding:1px 6px;margin-left:4px;font-weight:900;cursor:pointer}.inlineCompanyInfoBtn:hover{background:#bfdbfe}.companyInfoDialog{width:min(820px,96vw)}.companyTabs{display:flex;gap:8px;border-bottom:1px solid var(--line);padding-bottom:8px;flex-wrap:wrap}.companyTab{background:#f8fafc}.companyTab.active{background:var(--blue);color:white;border-color:var(--blue)}.companyTabPane{display:grid;gap:12px}.companyContactsList{display:grid;gap:12px}.companyContactCard{background:#f8fafc;border:1px solid var(--line);border-radius:12px;padding:12px;display:grid;gap:10px}.removeCompanyContactBtn{justify-self:start;color:#991b1b;background:#fee2e2;border-color:#fecaca}.dangerButton{border-radius:9px;padding:10px 13px;background:#dc2626!important;border-color:#dc2626!important;color:white!important;font-weight:700;cursor:pointer}
+
+
+/* V42 - Document principal entreprise */
+.companyDocumentPanel{margin-top:14px;border:1px solid var(--line);border-radius:12px;background:#f8fafc;padding:12px;display:grid;gap:10px}
+.companyDocumentPanel h3{margin:0;color:#172033}
+.companyDocumentUploadLine{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.companyDocumentBox{border:1px dashed #cbd5e1;border-radius:10px;background:white;padding:10px}
+.companyDocumentRow{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap}
+.companyDocumentActions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.companyDocumentActions button{padding:7px 10px}

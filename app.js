@@ -14,7 +14,7 @@ let listFilterUrgent=false;
 let listFilterHigh=false;
 
 // Variables Google Drive déclarées dès le début pour éviter les erreurs au chargement.
-const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.file';
+const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive';
 const DRIVE_DISCOVERY = 'https://www.googleapis.com/discovery/v1/apis/drive/v3/rest';
 const DRIVE_FILENAME = 'mon-organiseur-drive-data.json';
 const CLIENT_ID_KEY = 'mon-organiseur-google-client-id';
@@ -901,7 +901,7 @@ function ensureCompanyInfo(name){
   ensurePlanData();
   const key=(name||'').trim();
   if(!key) return null;
-  if(!db.companyInfos[key]) db.companyInfos[key]={name:key,phone:'',mobile:'',email:'',website:'',address:'',zip:'',city:'',country:'',vat:'',ide:'',contacts:[],notes:'',updatedAt:''};
+  if(!db.companyInfos[key]) db.companyInfos[key]={name:key,phone:'',mobile:'',email:'',website:'',address:'',zip:'',city:'',country:'',vat:'',ide:'',contacts:[],notes:'',document:null,updatedAt:''};
   return db.companyInfos[key];
 }
 function setCompanyTab(tab){
@@ -927,6 +927,151 @@ function collectCompanyContacts(){
     return o;
   }).filter(c=>Object.values(c).some(Boolean));
 }
+
+function companyDocumentIcon(mime='', name=''){
+  const n=String(name||'').toLowerCase(), m=String(mime||'').toLowerCase();
+  if(m.includes('pdf')||n.endsWith('.pdf')) return '📄';
+  if(m.includes('spreadsheet')||n.match(/\.(xls|xlsx|csv)$/)) return '📊';
+  if(m.includes('word')||n.match(/\.(doc|docx)$/)) return '📝';
+  if(m.includes('image')||n.match(/\.(jpg|jpeg|png|gif|webp|heic)$/)) return '📷';
+  if(n.match(/\.(msg|eml)$/)) return '✉️';
+  if(n.endsWith('.dwg')) return '📁';
+  if(m.includes('video')) return '🎥';
+  if(m.includes('audio')) return '🎵';
+  if(n.endsWith('.zip')) return '📦';
+  return '📎';
+}
+function formatFileSize(bytes){
+  const n=Number(bytes||0); if(!n) return '--';
+  if(n<1024) return n+' o'; if(n<1024*1024) return Math.round(n/1024)+' Ko';
+  return (n/1024/1024).toFixed(1).replace('.',',')+' Mo';
+}
+function renderCompanyDocument(doc){
+  const box=$('companyDocumentBox'); if(!box) return;
+  if(!doc || !doc.driveId){
+    box.innerHTML='<p class="small">Aucun document principal.</p>';
+    return;
+  }
+  const icon=companyDocumentIcon(doc.mimeType, doc.name);
+  box.innerHTML=`<div class="companyDocumentRow">
+    <div><strong>${icon} ${esc(doc.displayName||doc.name||'Document')}</strong><div class="small">${esc(doc.name||'')} · ${esc(doc.mimeType||'type inconnu')} · ${formatFileSize(doc.size)} · ${esc((doc.createdAt||'').slice(0,10))}</div></div>
+    <div class="companyDocumentActions"><button type="button" id="openCompanyDocumentBtn">👁 Ouvrir</button><button type="button" id="downloadCompanyDocumentBtn">📥 Télécharger</button><button type="button" id="deleteCompanyDocumentBtn" class="dangerButton">❌</button></div>
+  </div>`;
+  $('openCompanyDocumentBtn').onclick=()=>window.open(doc.webViewLink||('https://drive.google.com/file/d/'+doc.driveId+'/view'),'_blank');
+  $('downloadCompanyDocumentBtn').onclick=()=>window.open(doc.webContentLink||('https://drive.google.com/uc?export=download&id='+doc.driveId),'_blank');
+  $('deleteCompanyDocumentBtn').onclick=()=>deleteCompanyDocument();
+}
+function driveQueryString(s){return String(s||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");}
+async function findDriveFolderByName(name,parentId=''){
+  const qParts=[`name='${driveQueryString(name)}'`,`mimeType='application/vnd.google-apps.folder'`,'trashed=false'];
+  if(parentId) qParts.push(`'${parentId}' in parents`);
+  const res=await gapi.client.drive.files.list({q:qParts.join(' and '),spaces:'drive',fields:'files(id,name)',pageSize:10});
+  return (res.result.files||[])[0]||null;
+}
+async function createDriveFolder(name,parentId=''){
+  const metadata={name,mimeType:'application/vnd.google-apps.folder'};
+  if(parentId) metadata.parents=[parentId];
+  const res=await gapi.client.drive.files.create({resource:metadata,fields:'id,name'});
+  return res.result;
+}
+async function getOrCreateDriveFolder(name,parentId=''){
+  return await findDriveFolderByName(name,parentId) || await createDriveFolder(name,parentId);
+}
+async function getCompanyDriveFolder(company){
+  const root=await getOrCreateDriveFolder('ORGANISER SAUVEGARDE DOSSIERS');
+  const entreprises=await getOrCreateDriveFolder('Entreprises',root.id);
+  return await getOrCreateDriveFolder(company,entreprises.id);
+}
+async function findDriveFileInFolder(name,parentId){
+  const res=await gapi.client.drive.files.list({q:`name='${driveQueryString(name)}' and '${parentId}' in parents and trashed=false`,spaces:'drive',fields:'files(id,name)',pageSize:10});
+  return (res.result.files||[])[0]||null;
+}
+function splitFileName(name){
+  const i=String(name).lastIndexOf('.');
+  if(i<=0) return [String(name),''];
+  return [String(name).slice(0,i),String(name).slice(i)];
+}
+async function uniqueFileNameInFolder(name,parentId){
+  if(!await findDriveFileInFolder(name,parentId)) return name;
+  const [base,ext]=splitFileName(name);
+  for(let i=2;i<500;i++){
+    const candidate=`${base} (${i})${ext}`;
+    if(!await findDriveFileInFolder(candidate,parentId)) return candidate;
+  }
+  return Date.now()+'-'+name;
+}
+async function deleteDriveFile(fileId){
+  const token=getDriveToken();
+  if(!token) throw new Error('Jeton Google Drive absent');
+  const res=await fetch('https://www.googleapis.com/drive/v3/files/'+encodeURIComponent(fileId),{method:'DELETE',headers:{Authorization:'Bearer '+token.access_token}});
+  if(!res.ok) throw new Error('Suppression Drive impossible : '+res.status+' '+await res.text());
+}
+async function uploadFileToDriveFolder(file,parentId,name){
+  const token=getDriveToken();
+  if(!token) throw new Error('Jeton Google Drive absent');
+  const metadata={name:name||file.name,parents:[parentId]};
+  const boundary='-------monorganiseur'+Date.now();
+  const body=new Blob([
+    '--'+boundary+'\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n',
+    JSON.stringify(metadata),
+    '\r\n--'+boundary+'\r\nContent-Type: '+(file.type||'application/octet-stream')+'\r\n\r\n',
+    file,
+    '\r\n--'+boundary+'--'
+  ],{type:'multipart/related; boundary='+boundary});
+  const url='https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,webViewLink,webContentLink,mimeType,size';
+  const res=await fetch(url,{method:'POST',headers:{Authorization:'Bearer '+token.access_token,'Content-Type':'multipart/related; boundary='+boundary},body});
+  const text=await res.text();
+  if(!res.ok) throw new Error('Envoi Drive impossible : '+res.status+' '+text);
+  return JSON.parse(text);
+}
+async function uploadCompanyDocument(){
+  try{
+    const key=$('companyInfoName').value.trim();
+    if(!key){alert('Entreprise introuvable.');return;}
+    const input=$('companyDocumentFile');
+    const file=input?.files?.[0];
+    if(!file){alert('Choisis d’abord un fichier.');return;}
+    if(!await ensureDriveUsable(false)) return;
+    status('Envoi du document vers Google Drive...');
+    const folder=await getCompanyDriveFolder(key);
+    let targetName=file.name;
+    const existing=await findDriveFileInFolder(targetName,folder.id);
+    if(existing){
+      const choice=prompt('Un fichier portant ce nom existe déjà dans le dossier de cette entreprise.\n\nTape :\n1 = Remplacer\n2 = Conserver les deux\n3 = Annuler','2');
+      if(choice==='1') await deleteDriveFile(existing.id);
+      else if(choice==='2') targetName=await uniqueFileNameInFolder(targetName,folder.id);
+      else {status('Envoi annulé.');return;}
+    }
+    const uploaded=await uploadFileToDriveFolder(file,folder.id,targetName);
+    const info=ensureCompanyInfo(key);
+    info.document={displayName:$('companyDocumentDisplayName').value.trim()||uploaded.name,name:uploaded.name,mimeType:uploaded.mimeType||file.type,size:uploaded.size||file.size,driveId:uploaded.id,webViewLink:uploaded.webViewLink,webContentLink:uploaded.webContentLink,createdAt:new Date().toISOString()};
+    info.updatedAt=new Date().toISOString();
+    db.companyInfos[key]=info;
+    input.value='';
+    renderCompanyDocument(info.document);
+    save();
+    status('Document envoyé sur Google Drive : '+uploaded.name);
+    alert('Document envoyé sur Google Drive.');
+  }catch(e){console.error(e);alert('Erreur document : '+explainError(e));status('Erreur document : '+explainError(e));}
+}
+async function deleteCompanyDocument(){
+  try{
+    const key=$('companyInfoName').value.trim();
+    const info=ensureCompanyInfo(key);
+    if(!info?.document?.driveId) return;
+    const also=confirm('Retirer ce document de la fiche entreprise ?\n\nOK = retirer de la fiche et supprimer aussi le fichier sur Google Drive.\nAnnuler = ne rien faire.');
+    if(!also) return;
+    if(await ensureDriveUsable(true)){
+      try{ await deleteDriveFile(info.document.driveId); }catch(e){ console.warn(e); }
+    }
+    info.document=null;
+    info.updatedAt=new Date().toISOString();
+    db.companyInfos[key]=info;
+    renderCompanyDocument(null);
+    save();
+    status('Document supprimé de la fiche entreprise.');
+  }catch(e){console.error(e);alert('Erreur suppression document : '+explainError(e));}
+}
 function openCompanyInfo(name){
   const key=(name||'').trim();
   if(!key){alert('Aucune entreprise sur cette tâche.');return;}
@@ -945,6 +1090,8 @@ function openCompanyInfo(name){
   $('companyVat').value=info.vat||'';
   $('companyIde').value=info.ide||'';
   $('companyNotes').value=info.notes||'';
+  $('companyDocumentDisplayName').value=info.document?.displayName||info.document?.name||'';
+  renderCompanyDocument(info.document||null);
   renderCompanyContacts(info.contacts||[]);
   setCompanyTab('general');
   $('companyInfoDialog').showModal();
@@ -952,11 +1099,13 @@ function openCompanyInfo(name){
 function saveCompanyInfoFromDialog(){
   const key=$('companyInfoName').value.trim();
   if(!key) return;
-  db.companyInfos[key]={name:$('companyFieldName').value.trim()||key,phone:$('companyPhone').value.trim(),mobile:$('companyMobile').value.trim(),email:$('companyEmail').value.trim(),website:$('companyWebsite').value.trim(),address:$('companyAddress').value.trim(),zip:$('companyZip').value.trim(),city:$('companyCity').value.trim(),country:$('companyCountry').value.trim(),vat:$('companyVat').value.trim(),ide:$('companyIde').value.trim(),contacts:collectCompanyContacts(),notes:$('companyNotes').value.trim(),updatedAt:new Date().toISOString()};
+  const oldInfo=db.companyInfos[key]||{};
+  db.companyInfos[key]={name:$('companyFieldName').value.trim()||key,phone:$('companyPhone').value.trim(),mobile:$('companyMobile').value.trim(),email:$('companyEmail').value.trim(),website:$('companyWebsite').value.trim(),address:$('companyAddress').value.trim(),zip:$('companyZip').value.trim(),city:$('companyCity').value.trim(),country:$('companyCountry').value.trim(),vat:$('companyVat').value.trim(),ide:$('companyIde').value.trim(),contacts:collectCompanyContacts(),notes:$('companyNotes').value.trim(),document:oldInfo.document||null,updatedAt:new Date().toISOString()};
 }
 if($('companyInfoForm')){
   document.querySelectorAll('.companyTab').forEach(btn=>btn.onclick=()=>setCompanyTab(btn.dataset.tab));
   $('addCompanyContactBtn').onclick=()=>{const contacts=collectCompanyContacts();contacts.push({});renderCompanyContacts(contacts);};
+  if($('uploadCompanyDocumentBtn')) $('uploadCompanyDocumentBtn').onclick=()=>uploadCompanyDocument();
   $('companyContactsList').addEventListener('click',e=>{if(e.target.closest('.removeCompanyContactBtn')){e.target.closest('.companyContactCard').remove();}});
   $('cancelCompanyInfoBtn').onclick=()=>$('companyInfoDialog').close();
   $('companyInfoForm').onsubmit=e=>{e.preventDefault();saveCompanyInfoFromDialog();$('companyInfoDialog').close();render();};
@@ -965,7 +1114,7 @@ if($('companyInfoForm')){
 
 // ---------------- GOOGLE DRIVE SYNC ----------------
 
-const VERSION_LABEL = 'V41.1';
+const VERSION_LABEL = 'V42';
 let driveConnectedForBanner = false;
 let lastSaveTimeForBanner = localStorage.getItem('mon-organiseur-last-save-time') || '--';
 let lastLocalSaveTimeForBanner = localStorage.getItem('mon-organiseur-last-local-save-time') || '--';

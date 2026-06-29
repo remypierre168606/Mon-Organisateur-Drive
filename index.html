@@ -11,7 +11,7 @@
 </head>
 <body>
   <aside class="sidebar">
-    <div class="brand"><div class="logo">O</div><div><strong>Mon Organiseur</strong><span>version Drive V41.1</span></div></div>
+    <div class="brand"><div class="logo">O</div><div><strong>Mon Organiseur</strong><span>version Drive V42</span></div></div>
     <button class="nav active" data-view="settings">⚙️ Drive</button>
     <button class="nav" data-view="board">📋 Tableau</button>
     <button class="nav" data-view="list">☑️ Liste</button>
@@ -31,7 +31,7 @@
   </aside>
 
   <main class="app">
-    <div id="versionBanner" class="versionBanner">V41.1 | 🔴 Drive déconnecté | 💾 Drive --</div>
+    <div id="versionBanner" class="versionBanner">V42 | 🔴 Drive déconnecté | 💾 Drive --</div>
     <header class="topbar topbarCompact">
       <div class="topIdentity">
         <input id="planTitle" class="planTitle" aria-label="Nom du plan">
@@ -152,6 +152,12 @@
         <label>Adresse<input id="companyAddress"></label>
         <div class="grid2"><label>NPA<input id="companyZip"></label><label>Ville<input id="companyCity"></label></div>
         <div class="grid2"><label>TVA<input id="companyVat"></label><label>IDE<input id="companyIde"></label></div>
+        <div class="companyDocumentPanel">
+          <h3>📎 Document principal</h3>
+          <div class="grid2"><label>Nom du document<input id="companyDocumentDisplayName" placeholder="ex: Contrat de maintenance"></label><label>Fichier<input id="companyDocumentFile" type="file"></label></div>
+          <div class="companyDocumentUploadLine"><button type="button" id="uploadCompanyDocumentBtn">Envoyer sur Google Drive</button><span class="small">Dossier : ORGANISER SAUVEGARDE DOSSIERS / Entreprises / Nom de l'entreprise</span></div>
+          <div id="companyDocumentBox" class="companyDocumentBox"><p class="small">Aucun document principal.</p></div>
+        </div>
       </section>
       <section id="companyTabContacts" class="companyTabPane hidden">
         <div id="companyContactsList" class="companyContactsList"></div>
@@ -185,6 +191,6 @@
 
   <script src="https://accounts.google.com/gsi/client"></script>
   <script src="https://apis.google.com/js/api.js"></script>
-  <script src="app.js?v=41"></script>
+  <script src="app.js?v=42"></script>
 </body>
 </html>

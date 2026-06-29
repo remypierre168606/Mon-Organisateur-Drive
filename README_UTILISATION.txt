@@ -1,3 +1,8 @@
+MON ORGANISEUR DRIVE - VERSION V42
+
+Ajout : document principal entreprise envoyé automatiquement dans Google Drive.
+Dossier utilisé : ORGANISER SAUVEGARDE DOSSIERS / Entreprises / <Nom entreprise>.
+
 MON ORGANISEUR DRIVE - VERSION V26 LIENS DRIVE CORRIGÉE
 
 Cette version corrige le cache navigateur et affiche clairement : Version V26 liens.
