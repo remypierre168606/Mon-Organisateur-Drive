@@ -590,7 +590,7 @@ function renderGroupedView(field){
   const entries=Object.entries(groups);
   root.innerHTML=`<div class="groupHeader"><h2>${icon} ${esc(title)}</h2><p>Vue globale : toutes les tâches de tous les plans. Clique sur <strong>Ouvrir</strong> pour afficher une page dédiée.</p></div>`+
     (entries.length?`<div class="groupGrid">${entries.map(([name,items])=>`<section class="groupBox" data-value="${encodeURIComponent(name)}">
-      <h3><span>${esc(name)} <span class="count">${items.length}</span></span><span class="groupActions">${field==='company'?`<button class="companyInfoOpenBtn openGroupBtn" data-company="${esc(name)}">ⓘ Fiche</button>`:''}<button class="openGroupBtn" data-field="${field}" data-name="${encodeURIComponent(name)}">Ouvrir</button></span></h3>
+      <h3><span>${esc(name)} <span class="count">${items.length}</span></span><span class="groupActions">${field==='company'?`<button class="companyInfoOpenBtn" data-company="${esc(name)}">ⓘ Fiche</button>`:''}<button class="openGroupBtn" data-field="${field}" data-name="${encodeURIComponent(name)}">Ouvrir</button></span></h3>
       <div class="groupTasks">${items.slice(0,6).map(t=>taskRowForGroup(t,field)).join('')}${items.length>6?`<div class="small">+ ${items.length-6} tâche(s) dans la page dédiée</div>`:''}</div>
     </section>`).join('')}</div>`:`<p>Aucune tâche trouvée pour ${esc(empty.toLowerCase())}.</p>`);
   root.querySelectorAll('.openGroupBtn').forEach(btn=>btn.onclick=(e)=>{
@@ -615,9 +615,12 @@ function renderGroupDetail(field, name){
   root.innerHTML=`<div class="groupHeader detailHeader">
     <button id="backGroupBtn" class="backBtn">← Retour</button>
     <div><h2>${icon} ${esc(label)} : ${esc(name)}</h2><p>${tasks.length} tâche(s) trouvée(s) dans tous les plans.</p></div>
+    ${field==='company'?`<button id="openCompanyInfoFromDetailBtn" class="openGroupBtn">ⓘ Ouvrir la fiche entreprise</button>`:''}
   </div>
   <div class="detailTaskList">${tasks.length?tasks.map(t=>taskRowForGroup(t,field)).join(''):`<p>Aucune tâche pour ${esc(name)}.</p>`}</div>`;
   $('backGroupBtn').onclick=()=>renderGroupedView(field);
+  const infoBtn=$('openCompanyInfoFromDetailBtn');
+  if(infoBtn) infoBtn.onclick=()=>openCompanyInfo(name);
   attachGroupTaskClicks(root);
 }
 
@@ -962,7 +965,7 @@ if($('companyInfoForm')){
 
 // ---------------- GOOGLE DRIVE SYNC ----------------
 
-const VERSION_LABEL = 'V41';
+const VERSION_LABEL = 'V41.1';
 let driveConnectedForBanner = false;
 let lastSaveTimeForBanner = localStorage.getItem('mon-organiseur-last-save-time') || '--';
 let lastLocalSaveTimeForBanner = localStorage.getItem('mon-organiseur-last-local-save-time') || '--';
