@@ -308,3 +308,14 @@
 .companyDocumentRow{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap}
 .companyDocumentActions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .companyDocumentActions button{padding:7px 10px}
+
+/* V42.1 - document principal dans la fiche tâche */
+.taskDocumentPanel{margin-top:14px;border:1px solid var(--line);border-radius:12px;background:#f8fafc;padding:12px;display:grid;gap:10px}
+.taskDocumentPanel h3{margin:0;color:#172033;font-size:15px}
+.taskDocumentUploadLine{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.taskDocumentBox{border:1px dashed #cbd5e1;border-radius:10px;background:white;padding:10px}
+.taskDocumentRow{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap}
+.taskDocumentActions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.taskDocumentActions button{padding:7px 10px}
+.taskDocPreview{margin-top:8px;font-size:12px}
+.taskDocLink{display:inline-flex;gap:4px;align-items:center;background:#eef2ff;border-radius:999px;padding:4px 8px;text-decoration:none;color:#1d4ed8}

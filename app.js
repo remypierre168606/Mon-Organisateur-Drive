@@ -297,7 +297,14 @@ function linkUrl(u){
 function linksHtml(t){
   const url=linkUrl(t.linkUrl||(t.links&&t.links[0]&&t.links[0].url)); const name=t.linkName||(t.links&&t.links[0]&&t.links[0].name); if(!url) return ''; return `<div class="taskLinksPreview"><a class="taskLink" href="${esc(url)}" target="_blank" rel="noopener noreferrer">🔗 ${esc(name||'Ouvrir le lien')}</a></div>`;
 }
-function card(t,bid){const el=document.createElement('article');el.className='card priority-'+(t.priority||'normal')+' '+(t.progress==='done'?'done':'');el.draggable=true;el.ondragstart=()=>drag=t.id;el.onclick=()=>openTask(t.id,bid);el.innerHTML=`${appointmentDotHtml(t)}<h3>${t.progress==='done'?'✅ ':''}${esc(t.title)}</h3><div class="meta">${t.priority!=='low'?`<span class="pill ${t.priority}">${prio(t.priority)}</span>`:''}${t.dueDate?`<span class="pill ${isLate(t)?'late':''}">📅 ${esc(t.dueDate)}</span>`:''}${t.assignee?`<span class="pill">👤 ${esc(t.assignee)}</span>`:''}${t.company?`<span class="pill">🏢 ${esc(t.company)} <button class="inlineCompanyInfoBtn" data-company="${esc(t.company)}" title="Fiche entreprise">ⓘ</button></span>`:''}</div>${linksHtml(t)}`;el.querySelectorAll('a.taskLink').forEach(a=>a.onclick=e=>e.stopPropagation());return el}
+function taskDocumentHtml(t){
+  const d=t?.document;
+  if(!d || !d.driveId) return '';
+  const icon=companyDocumentIcon(d.mimeType,d.name);
+  const href=d.webViewLink||('https://drive.google.com/file/d/'+d.driveId+'/view');
+  return `<div class="taskDocPreview"><a class="taskDocLink" href="${esc(href)}" target="_blank" rel="noopener noreferrer">${icon} ${esc(d.displayName||d.name||'Document')}</a></div>`;
+}
+function card(t,bid){const el=document.createElement('article');el.className='card priority-'+(t.priority||'normal')+' '+(t.progress==='done'?'done':'');el.draggable=true;el.ondragstart=()=>drag=t.id;el.onclick=()=>openTask(t.id,bid);el.innerHTML=`${appointmentDotHtml(t)}<h3>${t.progress==='done'?'✅ ':''}${esc(t.title)}</h3><div class="meta">${t.priority!=='low'?`<span class="pill ${t.priority}">${prio(t.priority)}</span>`:''}${t.dueDate?`<span class="pill ${isLate(t)?'late':''}">📅 ${esc(t.dueDate)}</span>`:''}${t.assignee?`<span class="pill">👤 ${esc(t.assignee)}</span>`:''}${t.company?`<span class="pill">🏢 ${esc(t.company)} <button class="inlineCompanyInfoBtn" data-company="${esc(t.company)}" title="Fiche entreprise">ⓘ</button></span>`:''}</div>${linksHtml(t)}${taskDocumentHtml(t)}`;el.querySelectorAll('a.taskLink,a.taskDocLink').forEach(a=>a.onclick=e=>e.stopPropagation());return el}
 function listPriorityRank(p){return {urgent:0,high:1,normal:2,low:3}[p||'normal'] ?? 2}
 function listDateRank(d){return d ? d : '9999-99-99'}
 function renderList(){
@@ -737,6 +744,10 @@ function openTask(id,bid){
   $('taskProgress').value=t?.progress||'todo';
   $('taskLinkName').value=(t?.linkName||t?.links?.[0]?.name||'');
   $('taskLinkUrl').value=(t?.linkUrl||t?.links?.[0]?.url||'');
+  if($('taskDocumentDisplayName')) $('taskDocumentDisplayName').value=t?.document?.displayName||t?.document?.name||'';
+  if($('taskDocumentFile')) $('taskDocumentFile').value='';
+  renderTaskDocument(t?.document||null);
+  if($('uploadTaskDocumentBtn')) $('uploadTaskDocumentBtn').onclick=()=>uploadTaskDocumentFromButton();
   const planSelect=$('taskPlan');
   if(planSelect){
     planSelect.innerHTML=db.plans.map((p,i)=>`<option value="${i}">${esc(p.title||('Plan '+(i+1)))}</option>`).join('');
@@ -782,28 +793,34 @@ document.addEventListener('click', (e)=>{
   if(dot){ e.preventDefault(); e.stopPropagation(); openAppointmentDay(dot.dataset.company||''); }
 });
 
-$('taskForm').onsubmit=e=>{
+$('taskForm').onsubmit=async e=>{
   e.preventDefault();
-  const id=$('taskId').value||uid();
-  const found=findTaskGlobal(id);
-  const old=found.t;
-  const targetPlanIndex=$('taskPlan')?Number($('taskPlan').value):db.activePlan;
-  const targetPlan=db.plans[targetPlanIndex]||plan();
-  const startDate=$('taskStartDate')?$('taskStartDate').value:'';
-  const endDate=$('taskEndDate')?$('taskEndDate').value:'';
-  // V40.12 : la date de fin remplace l'échéance.
-  const dueDate=endDate;
-  const t={id,title:$('taskTitle').value.trim(),notes:$('taskNotes').value.trim(),assignee:$('taskAssignee').value.trim(),company:$('taskCompany').value.trim(),dueDate,startDate,endDate,priority:$('taskPriority').value,progress:$('taskProgress').value,linkName:$('taskLinkName').value.trim(),linkUrl:$('taskLinkUrl').value.trim()};
-  db.plans.forEach(p=>(p.buckets||[]).forEach(b=>b.tasks=b.tasks.filter(x=>x.id!==id)));
-  const targetBucket=(targetPlan.buckets||[]).find(b=>b.id===$('taskBucket').value)||targetPlan.buckets[0];
-  if(t.progress==='done'){
-    archiveTaskRecord(t,{planTitle:targetPlan.title,bucketTitle:targetBucket?.title,planIndex:targetPlanIndex});
-  }else{
-    if(old){targetBucket.tasks.push(t)}else{targetBucket.tasks.unshift(t)}
-    db.activePlan=targetPlanIndex;
+  try{
+    const id=$('taskId').value||uid();
+    const found=findTaskGlobal(id);
+    const old=found.t;
+    const targetPlanIndex=$('taskPlan')?Number($('taskPlan').value):db.activePlan;
+    const targetPlan=db.plans[targetPlanIndex]||plan();
+    const startDate=$('taskStartDate')?$('taskStartDate').value:'';
+    const endDate=$('taskEndDate')?$('taskEndDate').value:'';
+    // V40.12 : la date de fin remplace l'échéance.
+    const dueDate=endDate;
+    let t={id,title:$('taskTitle').value.trim(),notes:$('taskNotes').value.trim(),assignee:$('taskAssignee').value.trim(),company:$('taskCompany').value.trim(),dueDate,startDate,endDate,priority:$('taskPriority').value,progress:$('taskProgress').value,linkName:$('taskLinkName').value.trim(),linkUrl:$('taskLinkUrl').value.trim(),document:old?.document||null};
+    if($('taskDocumentFile')?.files?.[0]) t=await uploadTaskDocumentOnly(t);
+    db.plans.forEach(p=>(p.buckets||[]).forEach(b=>b.tasks=b.tasks.filter(x=>x.id!==id)));
+    const targetBucket=(targetPlan.buckets||[]).find(b=>b.id===$('taskBucket').value)||targetPlan.buckets[0];
+    if(t.progress==='done'){
+      archiveTaskRecord(t,{planTitle:targetPlan.title,bucketTitle:targetBucket?.title,planIndex:targetPlanIndex});
+    }else{
+      if(old){targetBucket.tasks.push(t)}else{targetBucket.tasks.unshift(t)}
+      db.activePlan=targetPlanIndex;
+    }
+    $('taskDialog').close();
+    render();
+  }catch(err){
+    console.error(err);
+    if(String(err.message||err)!=='Envoi du document annulé') alert('Impossible d’enregistrer la tâche : '+explainError(err));
   }
-  $('taskDialog').close();
-  render();
 };
 $('deleteTaskBtn').onclick=()=>{const id=$('taskId').value;if(confirm('Envoyer cette tâche dans la corbeille ?')){moveTaskToTrash(id);$('taskDialog').close();render()}};
 $('cancelDialog').onclick=()=>$('taskDialog').close();
@@ -1072,6 +1089,68 @@ async function deleteCompanyDocument(){
     status('Document supprimé de la fiche entreprise.');
   }catch(e){console.error(e);alert('Erreur suppression document : '+explainError(e));}
 }
+function renderTaskDocument(doc){
+  const box=$('taskDocumentBox'); if(!box) return;
+  if(!doc || !doc.driveId){ box.innerHTML='<p class="small">Aucun document principal.</p>'; return; }
+  const icon=companyDocumentIcon(doc.mimeType, doc.name);
+  box.innerHTML=`<div class="taskDocumentRow">
+    <div><strong>${icon} ${esc(doc.displayName||doc.name||'Document')}</strong><div class="small">${esc(doc.name||'')} · ${esc(doc.mimeType||'type inconnu')} · ${formatFileSize(doc.size)} · ${esc((doc.createdAt||'').slice(0,10))}</div></div>
+    <div class="taskDocumentActions"><button type="button" id="openTaskDocumentBtn">👁 Ouvrir</button><button type="button" id="downloadTaskDocumentBtn">📥 Télécharger</button><button type="button" id="deleteTaskDocumentBtn" class="dangerButton">❌</button></div>
+  </div>`;
+  $('openTaskDocumentBtn').onclick=()=>window.open(doc.webViewLink||('https://drive.google.com/file/d/'+doc.driveId+'/view'),'_blank');
+  $('downloadTaskDocumentBtn').onclick=()=>window.open(doc.webContentLink||('https://drive.google.com/uc?export=download&id='+doc.driveId),'_blank');
+  $('deleteTaskDocumentBtn').onclick=()=>deleteTaskDocument();
+}
+async function uploadTaskDocumentOnly(t){
+  const input=$('taskDocumentFile');
+  const file=input?.files?.[0];
+  if(!file) return t;
+  const company=(t.company||'').trim();
+  if(!company){ alert('Choisis une entreprise avant d’envoyer un document.'); throw new Error('Entreprise absente pour le document'); }
+  if(!await ensureDriveUsable(false)) throw new Error('Google Drive non connecté');
+  status('Envoi du document de la tâche vers Google Drive...');
+  const folder=await getCompanyDriveFolder(company);
+  let targetName=file.name;
+  const existing=await findDriveFileInFolder(targetName,folder.id);
+  if(existing){
+    const choice=prompt('Un fichier portant ce nom existe déjà dans le dossier de cette entreprise.\n\nTape :\n1 = Remplacer\n2 = Conserver les deux\n3 = Annuler','2');
+    if(choice==='1') await deleteDriveFile(existing.id);
+    else if(choice==='2') targetName=await uniqueFileNameInFolder(targetName,folder.id);
+    else { status('Envoi du document annulé.'); throw new Error('Envoi du document annulé'); }
+  }
+  const uploaded=await uploadFileToDriveFolder(file,folder.id,targetName);
+  t.document={displayName:$('taskDocumentDisplayName').value.trim()||uploaded.name,name:uploaded.name,mimeType:uploaded.mimeType||file.type,size:uploaded.size||file.size,driveId:uploaded.id,webViewLink:uploaded.webViewLink,webContentLink:uploaded.webContentLink,createdAt:new Date().toISOString()};
+  input.value='';
+  renderTaskDocument(t.document);
+  status('Document de tâche envoyé sur Google Drive : '+uploaded.name);
+  return t;
+}
+async function uploadTaskDocumentFromButton(){
+  try{
+    const id=$('taskId').value;
+    if(!id){ alert('Enregistre d’abord la tâche, puis rouvre-la pour envoyer un document.'); return; }
+    const found=findTaskGlobal(id);
+    if(!found.t){ alert('Tâche introuvable.'); return; }
+    found.t.company=$('taskCompany').value.trim();
+    found.t=await uploadTaskDocumentOnly(found.t);
+    save();
+    alert('Document envoyé sur Google Drive.');
+  }catch(e){ if(String(e.message||e)!=='Envoi du document annulé') { console.error(e); alert('Erreur document : '+explainError(e)); } }
+}
+async function deleteTaskDocument(){
+  try{
+    const id=$('taskId').value;
+    const found=findTaskGlobal(id);
+    const doc=found.t?.document;
+    if(!doc?.driveId) return;
+    if(!confirm('Retirer ce document de la tâche et le supprimer de Google Drive ?')) return;
+    if(await ensureDriveUsable(true)){ try{ await deleteDriveFile(doc.driveId); }catch(e){ console.warn(e); } }
+    found.t.document=null;
+    renderTaskDocument(null);
+    save();
+    status('Document supprimé de la tâche.');
+  }catch(e){ console.error(e); alert('Erreur suppression document : '+explainError(e)); }
+}
 function openCompanyInfo(name){
   const key=(name||'').trim();
   if(!key){alert('Aucune entreprise sur cette tâche.');return;}
@@ -1114,7 +1193,7 @@ if($('companyInfoForm')){
 
 // ---------------- GOOGLE DRIVE SYNC ----------------
 
-const VERSION_LABEL = 'V42';
+const VERSION_LABEL = 'V42.1';
 let driveConnectedForBanner = false;
 let lastSaveTimeForBanner = localStorage.getItem('mon-organiseur-last-save-time') || '--';
 let lastLocalSaveTimeForBanner = localStorage.getItem('mon-organiseur-last-local-save-time') || '--';
