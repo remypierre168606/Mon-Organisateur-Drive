@@ -14,7 +14,7 @@ let listFilterUrgent=false;
 let listFilterHigh=false;
 
 // Variables Google Drive déclarées dès le début pour éviter les erreurs au chargement.
-const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive';
+const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive https://www.googleapis.com/auth/contacts.readonly';
 const DRIVE_DISCOVERY = 'https://www.googleapis.com/discovery/v1/apis/drive/v3/rest';
 const DRIVE_FILENAME = 'mon-organiseur-drive-data.json';
 const CLIENT_ID_KEY = 'mon-organiseur-google-client-id';
@@ -1181,10 +1181,97 @@ function saveCompanyInfoFromDialog(){
   const oldInfo=db.companyInfos[key]||{};
   db.companyInfos[key]={name:$('companyFieldName').value.trim()||key,phone:$('companyPhone').value.trim(),mobile:$('companyMobile').value.trim(),email:$('companyEmail').value.trim(),website:$('companyWebsite').value.trim(),address:$('companyAddress').value.trim(),zip:$('companyZip').value.trim(),city:$('companyCity').value.trim(),country:$('companyCountry').value.trim(),vat:$('companyVat').value.trim(),ide:$('companyIde').value.trim(),contacts:collectCompanyContacts(),notes:$('companyNotes').value.trim(),document:oldInfo.document||null,updatedAt:new Date().toISOString()};
 }
+
+
+// ---------------- GOOGLE CONTACTS IMPORT ----------------
+function peopleApiHeaders(){
+  const token=getDriveToken();
+  if(!token || !token.access_token) throw new Error('Jeton Google absent. Reconnecte Google Drive avec l’autorisation Contacts.');
+  return {Authorization:'Bearer '+token.access_token};
+}
+function firstValue(arr, key){
+  if(!Array.isArray(arr) || !arr.length) return '';
+  const item=arr[0] || {};
+  return String(item[key] || item.value || '').trim();
+}
+function contactDisplayName(person){
+  return person?.names?.[0]?.displayName || person?.organizations?.[0]?.name || person?.emailAddresses?.[0]?.value || 'Contact sans nom';
+}
+function contactToSummary(person, i){
+  const name=contactDisplayName(person);
+  const org=person?.organizations?.[0]?.name || '';
+  const email=person?.emailAddresses?.[0]?.value || '';
+  const phone=person?.phoneNumbers?.[0]?.value || '';
+  return `${i+1}. ${name}${org?' — '+org:''}${email?' — '+email:''}${phone?' — '+phone:''}`;
+}
+function fillCompanyFromGoogleContact(person){
+  const org=person?.organizations?.[0] || {};
+  const name=person?.names?.[0] || {};
+  const email=person?.emailAddresses?.[0]?.value || '';
+  const phone=person?.phoneNumbers?.find(p=>/work|main/i.test(p.type||''))?.value || person?.phoneNumbers?.[0]?.value || '';
+  const mobile=person?.phoneNumbers?.find(p=>/mobile/i.test(p.type||''))?.value || '';
+  const addr=person?.addresses?.[0] || {};
+  const website=person?.urls?.[0]?.value || '';
+  if(org.name) $('companyFieldName').value=org.name;
+  if(phone) $('companyPhone').value=phone;
+  if(mobile) $('companyMobile').value=mobile;
+  if(email) $('companyEmail').value=email;
+  if(website) $('companyWebsite').value=website;
+  if(addr.streetAddress) $('companyAddress').value=addr.streetAddress;
+  if(addr.postalCode) $('companyZip').value=addr.postalCode;
+  if(addr.city) $('companyCity').value=addr.city;
+  if(addr.country) $('companyCountry').value=addr.country;
+  const contacts=collectCompanyContacts();
+  const contactName=[name.givenName||'', name.familyName||''].join(' ').trim() || name.displayName || '';
+  if(contactName || email || phone || mobile){
+    contacts.push({firstName:name.givenName||'',lastName:name.familyName||name.displayName||'',role:org.title||'',phone,mobile,email,notes:'Importé depuis Google Contacts'});
+    renderCompanyContacts(contacts);
+  }
+  status('Fiche entreprise remplie depuis Google Contacts. Pense à enregistrer.');
+}
+async function importCompanyFromGoogleContacts(){
+  try{
+    const query=($('companyFieldName').value || $('companyInfoName').value || '').trim();
+    if(!query){ alert('Nom d’entreprise vide.'); return; }
+    if(!driveReady || !hasValidDriveToken()){
+      alert('Reconnecte Google Drive pour autoriser aussi Google Contacts, puis réessaie.');
+      return;
+    }
+    status('Recherche Google Contacts : '+query+'...');
+    const readMask='names,emailAddresses,phoneNumbers,addresses,organizations,urls,biographies';
+    const url='https://people.googleapis.com/v1/people:searchContacts?query='+encodeURIComponent(query)+'&readMask='+encodeURIComponent(readMask)+'&pageSize=10';
+    const resp=await fetch(url,{headers:peopleApiHeaders()});
+    const text=await resp.text();
+    let data={};
+    try{data=JSON.parse(text||'{}')}catch{data={raw:text}}
+    if(!resp.ok){
+      const msg=data?.error?.message || text || resp.statusText;
+      throw new Error(resp.status+' '+msg);
+    }
+    const people=(data.results||[]).map(r=>r.person).filter(Boolean);
+    if(!people.length){ alert('Aucun contact Google trouvé pour : '+query); status('Aucun contact Google trouvé.'); return; }
+    let index=0;
+    if(people.length>1){
+      const list=people.map(contactToSummary).join('\n');
+      const choice=prompt('Contacts trouvés pour "'+query+'" :\n\n'+list+'\n\nTape le numéro du contact à importer.', '1');
+      if(!choice) return;
+      index=Math.max(0, Math.min(people.length-1, Number(choice)-1));
+      if(Number.isNaN(index)) index=0;
+    }
+    fillCompanyFromGoogleContact(people[index]);
+    setCompanyTab('general');
+  }catch(e){
+    console.error(e);
+    alert('Erreur Google Contacts : '+explainError(e)+'\n\nVérifie que People API est activée dans Google Cloud et que tu t’es reconnecté à Drive.');
+    status('Erreur Google Contacts : '+explainError(e));
+  }
+}
+
 if($('companyInfoForm')){
   document.querySelectorAll('.companyTab').forEach(btn=>btn.onclick=()=>setCompanyTab(btn.dataset.tab));
   $('addCompanyContactBtn').onclick=()=>{const contacts=collectCompanyContacts();contacts.push({});renderCompanyContacts(contacts);};
   if($('uploadCompanyDocumentBtn')) $('uploadCompanyDocumentBtn').onclick=()=>uploadCompanyDocument();
+  if($('importGoogleContactBtn')) $('importGoogleContactBtn').onclick=()=>importCompanyFromGoogleContacts();
   $('companyContactsList').addEventListener('click',e=>{if(e.target.closest('.removeCompanyContactBtn')){e.target.closest('.companyContactCard').remove();}});
   $('cancelCompanyInfoBtn').onclick=()=>$('companyInfoDialog').close();
   $('companyInfoForm').onsubmit=e=>{e.preventDefault();saveCompanyInfoFromDialog();$('companyInfoDialog').close();render();};
@@ -1193,7 +1280,7 @@ if($('companyInfoForm')){
 
 // ---------------- GOOGLE DRIVE SYNC ----------------
 
-const VERSION_LABEL = 'V45';
+const VERSION_LABEL = 'V46';
 let driveConnectedForBanner = false;
 let lastSaveTimeForBanner = localStorage.getItem('mon-organiseur-last-save-time') || '--';
 let lastLocalSaveTimeForBanner = localStorage.getItem('mon-organiseur-last-local-save-time') || '--';

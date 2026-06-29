@@ -319,3 +319,7 @@
 .taskDocumentActions button{padding:7px 10px}
 .taskDocPreview{margin-top:8px;font-size:12px}
 .taskDocLink{display:inline-flex;gap:4px;align-items:center;background:#eef2ff;border-radius:999px;padding:4px 8px;text-decoration:none;color:#1d4ed8}
+
+/* V46 - import Google Contacts */
+.companyImportLine{display:flex;gap:10px;align-items:center;flex-wrap:wrap;background:#f8fafc;border:1px solid var(--line);border-radius:12px;padding:10px;margin-bottom:10px}
+.companyImportLine button{background:#e0f2fe;border-color:#bae6fd;color:#075985;font-weight:800}
