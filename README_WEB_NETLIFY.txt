@@ -1,8 +1,12 @@
-MON ORGANISEUR DRIVE - VERSION V43
+MON ORGANISEUR DRIVE - VERSION V44
 
 Version basée sur V42.1.
 
-Nouveautés V43 :
+Nouveautés V44 :
+- Page Entreprises : affiche toutes les entreprises créées, même sans tâche.
+- Les fiches entreprises restent accessibles avec 0 tâche.
+
+Anciennes nouveautés V43 :
 - Les documents envoyés depuis une tâche ou une fiche entreprise vont directement dans le dossier Google Drive ORGANISEUR_DOSSIERS.
 - Le fichier reçoit un nom technique unique sur Google Drive pour éviter les doublons.
 - Le nom affiché dans l’Organiseur reste celui saisi dans la fiche tâche ou entreprise.

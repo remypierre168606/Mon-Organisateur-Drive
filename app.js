@@ -594,11 +594,21 @@ function renderGroupedView(field){
   });
   const groups={};
   tasks.forEach(t=>{const k=groupKeyValue(t,field); (groups[k] ||= []).push(t);});
-  const entries=Object.entries(groups);
+  let entries=Object.entries(groups);
+  // V44 : dans la page Entreprises, on affiche toutes les entreprises créées,
+  // même celles qui n'ont aucune tâche. Une entreprise est une fiche autonome.
+  if(field==='company'){
+    ensurePlanData();
+    const companyNames=[...new Set(db.companies.filter(Boolean))]
+      .sort((a,b)=>String(a).localeCompare(String(b),'fr',{sensitivity:'base'}));
+    entries=companyNames.map(name=>[name, groups[name]||[]]);
+    // On garde aussi le groupe "Aucune entreprise" s'il existe des tâches sans entreprise.
+    if(groups[empty]) entries.push([empty, groups[empty]]);
+  }
   root.innerHTML=`<div class="groupHeader"><h2>${icon} ${esc(title)}</h2><p>Vue globale : toutes les tâches de tous les plans. Clique sur <strong>Ouvrir</strong> pour afficher une page dédiée.</p></div>`+
     (entries.length?`<div class="groupGrid">${entries.map(([name,items])=>`<section class="groupBox" data-value="${encodeURIComponent(name)}">
       <h3><span>${esc(name)} <span class="count">${items.length}</span></span><span class="groupActions">${field==='company'?`<button class="companyInfoOpenBtn" data-company="${esc(name)}">ⓘ Fiche</button>`:''}<button class="openGroupBtn" data-field="${field}" data-name="${encodeURIComponent(name)}">Ouvrir</button></span></h3>
-      <div class="groupTasks">${items.slice(0,6).map(t=>taskRowForGroup(t,field)).join('')}${items.length>6?`<div class="small">+ ${items.length-6} tâche(s) dans la page dédiée</div>`:''}</div>
+      <div class="groupTasks">${items.length?items.slice(0,6).map(t=>taskRowForGroup(t,field)).join(''):`<div class="small">Aucune tâche pour cette entreprise.</div>`}${items.length>6?`<div class="small">+ ${items.length-6} tâche(s) dans la page dédiée</div>`:''}</div>
     </section>`).join('')}</div>`:`<p>Aucune tâche trouvée pour ${esc(empty.toLowerCase())}.</p>`);
   root.querySelectorAll('.openGroupBtn').forEach(btn=>btn.onclick=(e)=>{
     e.stopPropagation();
@@ -1183,7 +1193,7 @@ if($('companyInfoForm')){
 
 // ---------------- GOOGLE DRIVE SYNC ----------------
 
-const VERSION_LABEL = 'V43';
+const VERSION_LABEL = 'V44';
 let driveConnectedForBanner = false;
 let lastSaveTimeForBanner = localStorage.getItem('mon-organiseur-last-save-time') || '--';
 let lastLocalSaveTimeForBanner = localStorage.getItem('mon-organiseur-last-local-save-time') || '--';
