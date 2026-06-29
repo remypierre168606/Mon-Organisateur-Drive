@@ -237,3 +237,51 @@
   font-size:13px;
 }
 .calendarRdvOnly input{width:auto;margin:0;accent-color:#7e22ce}
+
+
+.driveStatusPanel{
+  margin:12px 0;
+  padding:12px;
+  border:1px solid #dbe7ff;
+  background:#f8fbff;
+  border-radius:14px;
+}
+.driveStatusHeader{
+  display:flex;
+  justify-content:space-between;
+  gap:12px;
+  align-items:center;
+  margin-bottom:10px;
+  font-size:15px;
+}
+.driveStatusGrid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(220px,1fr));
+  gap:8px;
+}
+.driveStatusGrid div{
+  background:#fff;
+  border:1px solid #e5eaf5;
+  border-radius:10px;
+  padding:8px 10px;
+}
+.driveStatusGrid span{
+  display:block;
+  color:#667085;
+  font-size:12px;
+  margin-bottom:3px;
+}
+.driveStatusGrid strong{
+  font-size:14px;
+}
+.driveStateOk{
+  color:#047857;
+  font-weight:700;
+}
+.driveStateWarn{
+  color:#b45309;
+  font-weight:700;
+}
+@media(max-width:900px){
+  .driveStatusGrid{grid-template-columns:1fr}
+}

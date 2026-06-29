@@ -684,7 +684,7 @@ $('planTitle').onchange=e=>{plan().title=e.target.value;render()};$('addBucketBt
 
 // ---------------- GOOGLE DRIVE SYNC ----------------
 
-const VERSION_LABEL = 'V40.8 STABLE';
+const VERSION_LABEL = 'V40.9 STABLE';
 let driveConnectedForBanner = false;
 let lastSaveTimeForBanner = localStorage.getItem('mon-organiseur-last-save-time') || '--';
 let lastLocalSaveTimeForBanner = localStorage.getItem('mon-organiseur-last-local-save-time') || '--';
@@ -711,15 +711,18 @@ function updateVersionBanner(){
   if(!el) return;
   const state = driveConnectedForBanner ? (pendingDriveSync ? '🟠 Drive à synchroniser' : '🟢 Drive connecté') : '🔴 Drive déconnecté';
   el.textContent = `${VERSION_LABEL} | ${state} | 💾 Drive ${lastSaveTimeForBanner}`;
+  updateDriveStatusPanel();
 }
 function setDriveBanner(connected){
   driveConnectedForBanner = !!connected && hasValidDriveToken();
   if(!driveConnectedForBanner) driveReady=false;
   updateVersionBanner();
+  updateDriveStatusPanel();
 }
 function setLocalSaveBanner(date=new Date()){
   lastLocalSaveTimeForBanner = nowLabel(date);
   localStorage.setItem('mon-organiseur-last-local-save-time', lastLocalSaveTimeForBanner);
+  updateDriveStatusPanel();
 }
 function setSaveBanner(date=new Date()){
   lastSaveTimeForBanner = nowLabel(date);
@@ -727,11 +730,29 @@ function setSaveBanner(date=new Date()){
   pendingDriveSync=false;
   localStorage.setItem('mon-organiseur-pending-sync','0');
   updateVersionBanner();
+  updateDriveStatusPanel();
 }
 function markPendingSync(){
   pendingDriveSync=true;
   localStorage.setItem('mon-organiseur-pending-sync','1');
   updateVersionBanner();
+  updateDriveStatusPanel();
+}
+
+function updateDriveStatusPanel(extra=''){
+  const panel=$('driveStatusPanel');
+  if(!panel) return;
+  const connected = !!driveReady && hasValidDriveToken();
+  const connectionText = connected ? '🟢 Connecté' : '🔴 Déconnecté';
+  const stateText = connected && !pendingDriveSync ? 'Synchronisé ✅' : 'À synchroniser ⚠️';
+  const tokenText = connected ? 'Valide' : 'Non connecté';
+  const fileText = driveFileId ? 'Trouvé' : 'Pas encore créé';
+  const c=$('driveStatusConnection'); if(c) c.textContent=connectionText;
+  const s=$('driveStatusState'); if(s){ s.textContent=stateText; s.className = connected && !pendingDriveSync ? 'driveStateOk' : 'driveStateWarn'; }
+  const l=$('driveStatusLocal'); if(l) l.textContent=lastLocalSaveTimeForBanner || '--';
+  const r=$('driveStatusRemote'); if(r) r.textContent=lastSaveTimeForBanner || '--';
+  const f=$('driveStatusFile'); if(f) f.textContent=fileText;
+  const t=$('driveStatusToken'); if(t) t.textContent=extra || tokenText;
 }
 function explainError(e){
   if(!e) return 'Erreur inconnue';
@@ -745,6 +766,7 @@ function status(msg){
   const el=$('syncStatus'); if(el) el.textContent = msg;
   if(String(msg||'').includes('Drive connecté')) setDriveBanner(true);
   if(String(msg||'').includes('Drive déconnecté') || String(msg||'').includes('Connexion Google Drive perdue')) setDriveBanner(false);
+  updateDriveStatusPanel();
 }
 function clientId(){ return localStorage.getItem(CLIENT_ID_KEY) || ''; }
 
@@ -782,6 +804,7 @@ function initDriveUi(){
   if(disconnectBtn) disconnectBtn.onclick=(e)=>{ e.preventDefault(); disconnectDrive(); };
   updateVersionBanner();
   updateWebOriginHelp();
+  updateDriveStatusPanel();
   status('Interface Google Drive prête. Dernière sauvegarde locale : '+lastLocalSaveTimeForBanner+'.');
   startDriveHealthCheck();
 }
@@ -910,7 +933,7 @@ async function findDriveFile(){
     spaces:'drive', fields:'files(id,name,modifiedTime)', pageSize:10
   });
   const file=(res.result.files||[])[0];
-  if(file){ driveFileId=file.id; localStorage.setItem('mon-organiseur-drive-file-id',driveFileId); return file.id; }
+  if(file){ driveFileId=file.id; localStorage.setItem('mon-organiseur-drive-file-id',driveFileId); updateDriveStatusPanel(); return file.id; }
   return '';
 }
 
@@ -952,7 +975,7 @@ async function saveToDrive(silent=false){
     const path=id?`/upload/drive/v3/files/${id}`:'/upload/drive/v3/files';
     const method=id?'PATCH':'POST';
     const res=await gapi.client.request({path,method,params:{uploadType:'multipart'},headers:{'Content-Type':'multipart/related; boundary='+boundary},body});
-    if(res.result.id){ driveFileId=res.result.id; localStorage.setItem('mon-organiseur-drive-file-id',driveFileId); }
+    if(res.result.id){ driveFileId=res.result.id; localStorage.setItem('mon-organiseur-drive-file-id',driveFileId); updateDriveStatusPanel(); }
     lastSavedSnapshot=snapshot;
     setDriveBanner(true);
     setSaveBanner();

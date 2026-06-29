@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Mon Organiseur Drive V40.8 STABLE</title>
+  <title>Mon Organiseur Drive V40.9 STABLE</title>
   <link rel="stylesheet" href="style.css" />
   <style>
     .syncbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px}.syncbar button{padding:8px 10px;border-radius:10px;border:1px solid #d9dde8;background:#fff;cursor:pointer}.syncbar .primary{background:#2563eb;color:#fff;border-color:#2563eb}.syncStatus{font-size:12px;color:#475569}.setupBox{background:#fff7ed;border:1px solid #fed7aa;padding:10px;border-radius:12px;margin-top:10px}.setupBox input{width:min(520px,100%);padding:8px;border:1px solid #ddd;border-radius:8px}.hiddenSetup{display:none}.cloudBadge{font-size:12px;background:#e0f2fe;color:#075985;padding:4px 8px;border-radius:999px}
@@ -11,7 +11,7 @@
 </head>
 <body>
   <aside class="sidebar">
-    <div class="brand"><div class="logo">O</div><div><strong>Mon Organiseur</strong><span>version Drive V40.8 STABLE</span></div></div>
+    <div class="brand"><div class="logo">O</div><div><strong>Mon Organiseur</strong><span>version Drive V40.9 STABLE</span></div></div>
     <button class="nav active" data-view="settings">⚙️ Drive</button>
     <button class="nav" data-view="board">📋 Tableau</button>
     <button class="nav" data-view="list">☑️ Liste</button>
@@ -29,7 +29,7 @@
   </aside>
 
   <main class="app">
-    <div id="versionBanner" class="versionBanner">V40.8 STABLE | 🔴 Drive déconnecté | 💾 Drive --</div>
+    <div id="versionBanner" class="versionBanner">V40.9 STABLE | 🔴 Drive déconnecté | 💾 Drive --</div>
     <header class="topbar topbarCompact">
       <div class="topIdentity">
         <input id="planTitle" class="planTitle" aria-label="Nom du plan">
@@ -58,6 +58,15 @@
           <button id="disconnectDriveBtn">Déconnecter</button>
         </div>
         <p id="syncStatus" class="syncStatus settingsStatus">Drive non connecté</p>
+        <div id="driveStatusPanel" class="driveStatusPanel">
+          <div class="driveStatusHeader"><strong id="driveStatusConnection">🔴 Déconnecté</strong><span id="driveStatusState" class="driveStateWarn">À synchroniser ⚠️</span></div>
+          <div class="driveStatusGrid">
+            <div><span>Dernière sauvegarde locale</span><strong id="driveStatusLocal">--</strong></div>
+            <div><span>Dernière sauvegarde Google Drive</span><strong id="driveStatusRemote">--</strong></div>
+            <div><span>Fichier Drive</span><strong id="driveStatusFile">--</strong></div>
+            <div><span>Connexion</span><strong id="driveStatusToken">Non vérifiée</strong></div>
+          </div>
+        </div>
         <div id="setupBox" class="setupBox settingsSetupBox">
           <strong>Configuration Google</strong><br>
           <small>Colle ici ton Client ID Google. Il est sauvegardé uniquement dans ton navigateur.</small><br>
@@ -73,7 +82,7 @@
           <code id="currentOriginText">--</code>
           <p><strong>URI de redirection :</strong></p>
           <code id="currentRedirectText">--</code>
-          <p class="small">V40.8 STABLE : connexion par fenêtre Google. Mets seulement l’origine JavaScript dans Google Cloud. Pas d’URI de redirection nécessaire.</p>
+          <p class="small">V40.9 STABLE : connexion par fenêtre Google. Mets seulement l’origine JavaScript dans Google Cloud. Pas d’URI de redirection nécessaire.</p>
         </div>
         <div class="settingsHelp">
           <h3>Utilisation simple</h3>
