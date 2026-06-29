@@ -24,3 +24,6 @@ V36.2 : bandeau supérieur réduit et boutons Responsable / Entreprise alignés 
 
 
 V40.7 : Calendrier - ajout d'une case compacte "RDV uniquement" dans les vues Jour/Semaine/Mois pour masquer les tâches et afficher seulement les rendez-vous.
+
+
+V40.10 : correction du clignotement RDV du jour et ajout de dates début/fin calendrier pour les tâches.

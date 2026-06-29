@@ -1,8 +1,8 @@
 const KEY='mon-organiseur-drive-v1';
 const uid=()=>crypto.randomUUID?crypto.randomUUID():String(Date.now()+Math.random());
-const today=()=>new Date().toISOString().slice(0,10);
+const today=()=>dateKey(new Date());
 const starter=()=>({activePlan:0,assignees:['Christophe'],companies:[],appointments:[],plans:[{id:uid(),title:'Plan de travail',buckets:[
- {id:uid(),title:'À faire',tasks:[{id:uid(),title:'Préparer la liste des achats',notes:'Exemple de tâche modifiable.',assignee:'Christophe',company:'',dueDate:'',priority:'normal',progress:'todo',linkName:'',linkUrl:''}]},
+ {id:uid(),title:'À faire',tasks:[{id:uid(),title:'Préparer la liste des achats',notes:'Exemple de tâche modifiable.',assignee:'Christophe',company:'',dueDate:'',startDate:'',endDate:'',priority:'normal',progress:'todo',linkName:'',linkUrl:''}]},
  {id:uid(),title:'En cours',tasks:[]},{id:uid(),title:'Terminé',tasks:[]}
 ]}]});
 let db=load(), view=(localStorage.getItem('mon-organiseur-google-client-id')?'board':'settings'), drag=null, dragColumn=null;
@@ -196,7 +196,7 @@ function deleteAppointment(id){
 function allTasks(){return plan().buckets.flatMap(b=>b.tasks.map(t=>({...t,bucket:b}))) }
 function allPlanTasks(){return db.plans.flatMap((p,planIndex)=>(p.buckets||[]).flatMap(b=>(b.tasks||[]).map(t=>({...t,bucket:b,plan:p,planIndex}))))}
 function isLate(t){return t.dueDate && t.progress!=='done' && t.dueDate<today()}
-function pass(t){const q=$('searchInput').value.toLowerCase();const f=$('filterStatus').value;const text=[t.title,t.notes,t.assignee,t.company,t.dueDate,t.priority,t.progress,t.linkName,t.linkUrl].join(' ').toLowerCase();if(q&&!text.includes(q))return false;if(f==='todo'&&t.progress==='done')return false;if(f==='done'&&t.progress!=='done')return false;if(f==='late'&&!isLate(t))return false;return true}
+function pass(t){const q=$('searchInput').value.toLowerCase();const f=$('filterStatus').value;const text=[t.title,t.notes,t.assignee,t.company,t.dueDate,t.startDate,t.endDate,t.priority,t.progress,t.linkName,t.linkUrl].join(' ').toLowerCase();if(q&&!text.includes(q))return false;if(f==='todo'&&t.progress==='done')return false;if(f==='done'&&t.progress!=='done')return false;if(f==='late'&&!isLate(t))return false;return true}
 function render(){ensurePlanData();sortChoiceLists();renderPlans();$('planTitle').value=plan().title;document.querySelectorAll('.view').forEach(v=>v.classList.add('hidden'));const activeView=$(view+'View')||$('boardView');activeView.classList.remove('hidden');$('addAssigneeBtn').onclick=()=>{const name=prompt('Nom du responsable à ajouter ?','');if(!name)return;const clean=name.trim();if(!clean)return;ensurePlanData();if(!db.assignees.includes(clean)) db.assignees.push(clean);render();alert('Responsable ajouté : '+clean);};$('removeAssigneeBtn').onclick=()=>removeChoiceFromList('assignee');$('addCompanyBtn').onclick=()=>{const name=prompt('Nom de l’entreprise à ajouter ?','');if(!name)return;const clean=name.trim();if(!clean)return;ensurePlanData();if(!db.companies.includes(clean)) db.companies.push(clean);render();alert('Entreprise ajoutée : '+clean);};$('removeCompanyBtn').onclick=()=>removeChoiceFromList('company');document.querySelectorAll('.nav').forEach(n=>n.classList.toggle('active',n.dataset.view===view)); if(view==='board')renderBoard(); if(view==='list')renderList(); if(view==='calendar')renderCalendar(); if(view==='assignees')renderGroupedView('assignee'); if(view==='companies')renderGroupedView('company'); if(view==='priorities')renderPriorityView(); save()}
 function renderPlans(){
   $('plansList').innerHTML=db.plans.map((p,i)=>`
@@ -291,12 +291,40 @@ function renderList(){
   document.querySelectorAll('.taskrow').forEach(r=>r.onclick=()=>openTask(r.dataset.id));
 }
 
+
+function validDateStr(v){ return /^\d{4}-\d{2}-\d{2}$/.test(String(v||'').trim()); }
+function calendarDatesForTask(t){
+  const start=validDateStr(t.startDate)?String(t.startDate):'';
+  const end=validDateStr(t.endDate)?String(t.endDate):'';
+  const due=validDateStr(t.dueDate)?String(t.dueDate):'';
+  const first=start || end || due;
+  const last=end || start || due;
+  if(!first) return [];
+  const [sy,sm,sd]=first.split('-').map(Number);
+  const [ey,em,ed]=last.split('-').map(Number);
+  let d=new Date(sy,sm-1,sd);
+  let stop=new Date(ey,em-1,ed);
+  if(stop<d) stop=new Date(d);
+  const out=[];
+  for(let guard=0; d<=stop && guard<370; guard++){
+    out.push(dateKey(d));
+    d.setDate(d.getDate()+1);
+  }
+  return out;
+}
+function calendarTaskDateLabel(t){
+  const start=validDateStr(t.startDate)?t.startDate:'';
+  const end=validDateStr(t.endDate)?t.endDate:'';
+  if(start && end && start!==end) return ` (${esc(start)} → ${esc(end)})`;
+  return '';
+}
+
 function renderCalendar(){
   const root=$('calendarView');
   if(!calendarMode) calendarMode='month';
   const tasksByDate={};
-  allTasks().filter(t=>t.dueDate&&pass(t)).forEach(t=>{
-    (tasksByDate[t.dueDate] ||= []).push(t);
+  allTasks().filter(pass).forEach(t=>{
+    calendarDatesForTask(t).forEach(d=>{ (tasksByDate[d] ||= []).push(t); });
   });
   const apptsByDate=appointmentsByDate();
   const apptHtml=(date)=> (apptsByDate[date]||[]).map(a=>`<div class="calAppt" data-appt="${a.id}" title="${esc(a.company||'RDV')}">${appointmentLabel(a)}</div>`).join('');
@@ -326,7 +354,7 @@ function renderCalendar(){
         </section>
         <section class="dayPanel">
           <h3>📋 Tâches du jour</h3>
-          <div class="calTasks dayTasks">${tasks.length?tasks.map(t=>`<div class="calTask priority-${t.priority||'normal'} ${isLate(t)?'lateTask':''}" data-id="${t.id}" title="${esc(t.title)}">${t.progress==='done'?'✅ ':''}${esc(t.title)}</div>`).join(''):'<p class="emptyDay">Aucune tâche ce jour.</p>'}</div>
+          <div class="calTasks dayTasks">${tasks.length?tasks.map(t=>`<div class="calTask priority-${t.priority||'normal'} ${isLate(t)?'lateTask':''}" data-id="${t.id}" title="${esc(t.title)}">${t.progress==='done'?'✅ ':''}${esc(t.title)}${calendarTaskDateLabel(t)}</div>`).join(''):'<p class="emptyDay">Aucune tâche ce jour.</p>'}</div>
         </section>
       </div>`;
     $('calPrevBtn').onclick=()=>{calendarCursor.setDate(calendarCursor.getDate()-1);renderCalendar()};
@@ -351,7 +379,7 @@ function renderCalendar(){
       const dayName=d.toLocaleDateString('fr-FR',{weekday:'long'});
       days.push(`<div class="calCell weekCell ${isToday?'todayCell':''}">
         <div class="calDate weekDate"><div><strong>${esc(dayName.charAt(0).toUpperCase()+dayName.slice(1))}</strong><br><span>${d.toLocaleDateString('fr-FR')}</span></div><div class="calCellBtns"><button class="calAddRdv" data-date="${key}" title="Ajouter un RDV">RDV</button><button class="calAdd" data-date="${key}" title="Ajouter une tâche à cette date">+</button></div></div>
-        <div class="calTasks">${apptHtml(key)}${tasks.map(t=>`<div class="calTask priority-${t.priority||'normal'} ${isLate(t)?'lateTask':''}" data-id="${t.id}" title="${esc(t.title)}">${t.progress==='done'?'✅ ':''}${esc(t.title)}</div>`).join('') || (!apptHtml(key)?'<div class="emptyDay">Aucune tâche</div>':'')}</div>
+        <div class="calTasks">${apptHtml(key)}${tasks.map(t=>`<div class="calTask priority-${t.priority||'normal'} ${isLate(t)?'lateTask':''}" data-id="${t.id}" title="${esc(t.title)}">${t.progress==='done'?'✅ ':''}${esc(t.title)}${calendarTaskDateLabel(t)}</div>`).join('') || (!apptHtml(key)?'<div class="emptyDay">Aucune tâche</div>':'')}</div>
       </div>`);
     }
     root.innerHTML=`
@@ -386,7 +414,7 @@ function renderCalendar(){
       const tasks=tasksForCalendar(key);
       days.push(`<div class="calCell ${inMonth?'':'otherMonth'} ${isToday?'todayCell':''}">
         <div class="calDate"><strong>${d.getDate()}</strong><div class="calCellBtns"><button class="calAddRdv" data-date="${key}" title="Ajouter un RDV">RDV</button><button class="calAdd" data-date="${key}" title="Ajouter une tâche à cette date">+</button></div></div>
-        <div class="calTasks">${apptHtml(key)}${tasks.map(t=>`<div class="calTask priority-${t.priority||'normal'} ${isLate(t)?'lateTask':''}" data-id="${t.id}" title="${esc(t.title)}">${t.progress==='done'?'✅ ':''}${esc(t.title)}</div>`).join('')}</div>
+        <div class="calTasks">${apptHtml(key)}${tasks.map(t=>`<div class="calTask priority-${t.priority||'normal'} ${isLate(t)?'lateTask':''}" data-id="${t.id}" title="${esc(t.title)}">${t.progress==='done'?'✅ ':''}${esc(t.title)}${calendarTaskDateLabel(t)}</div>`).join('')}</div>
       </div>`);
     }
     root.innerHTML=`
@@ -421,7 +449,7 @@ function renderCalendar(){
   document.querySelectorAll('.calAddRdv').forEach(btn=>btn.onclick=(e)=>{e.stopPropagation();openAppointmentDialog('',btn.dataset.date)});
 }
 function dateKey(d){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
-function openTaskOnDate(date){openTask(null,plan().buckets[0].id);$('taskDueDate').value=date}
+function openTaskOnDate(date){openTask(null,plan().buckets[0].id);$('taskDueDate').value=date;if($('taskStartDate'))$('taskStartDate').value=date;if($('taskEndDate'))$('taskEndDate').value=date}
 
 function groupKeyValue(t, field){
   const empty=field==='assignee'?'Aucun responsable':'Aucune entreprise';
@@ -618,6 +646,8 @@ function openTask(id,bid){
   $('taskAssignee').innerHTML=assigneeOptions(t?.assignee||'');
   $('taskCompany').innerHTML=companyOptions(t?.company||'');
   $('taskDueDate').value=t?.dueDate||'';
+  if($('taskStartDate')) $('taskStartDate').value=t?.startDate||'';
+  if($('taskEndDate')) $('taskEndDate').value=t?.endDate||'';
   $('taskPriority').value=t?.priority||'normal';
   $('taskProgress').value=t?.progress||'todo';
   $('taskLinkName').value=(t?.linkName||t?.links?.[0]?.name||'');
@@ -664,7 +694,7 @@ document.addEventListener('click', (e)=>{
   if(dot){ e.preventDefault(); e.stopPropagation(); openAppointmentDay(dot.dataset.company||''); }
 });
 
-$('taskForm').onsubmit=e=>{e.preventDefault();const id=$('taskId').value||uid();const found=findTaskGlobal(id);const old=found.t;const targetPlanIndex=$('taskPlan')?Number($('taskPlan').value):db.activePlan;const targetPlan=db.plans[targetPlanIndex]||plan();const t={id,title:$('taskTitle').value.trim(),notes:$('taskNotes').value.trim(),assignee:$('taskAssignee').value.trim(),company:$('taskCompany').value.trim(),dueDate:$('taskDueDate').value,priority:$('taskPriority').value,progress:$('taskProgress').value,linkName:$('taskLinkName').value.trim(),linkUrl:$('taskLinkUrl').value.trim()};db.plans.forEach(p=>(p.buckets||[]).forEach(b=>b.tasks=b.tasks.filter(x=>x.id!==id)));const targetBucket=(targetPlan.buckets||[]).find(b=>b.id===$('taskBucket').value)||targetPlan.buckets[0]; if(old){targetBucket.tasks.push(t)}else{targetBucket.tasks.unshift(t)}db.activePlan=targetPlanIndex;$('taskDialog').close();render()};
+$('taskForm').onsubmit=e=>{e.preventDefault();const id=$('taskId').value||uid();const found=findTaskGlobal(id);const old=found.t;const targetPlanIndex=$('taskPlan')?Number($('taskPlan').value):db.activePlan;const targetPlan=db.plans[targetPlanIndex]||plan();const t={id,title:$('taskTitle').value.trim(),notes:$('taskNotes').value.trim(),assignee:$('taskAssignee').value.trim(),company:$('taskCompany').value.trim(),dueDate:$('taskDueDate').value,startDate:$('taskStartDate')?$('taskStartDate').value:'',endDate:$('taskEndDate')?$('taskEndDate').value:'',priority:$('taskPriority').value,progress:$('taskProgress').value,linkName:$('taskLinkName').value.trim(),linkUrl:$('taskLinkUrl').value.trim()};db.plans.forEach(p=>(p.buckets||[]).forEach(b=>b.tasks=b.tasks.filter(x=>x.id!==id)));const targetBucket=(targetPlan.buckets||[]).find(b=>b.id===$('taskBucket').value)||targetPlan.buckets[0]; if(old){targetBucket.tasks.push(t)}else{targetBucket.tasks.unshift(t)}db.activePlan=targetPlanIndex;$('taskDialog').close();render()};
 $('deleteTaskBtn').onclick=()=>{const id=$('taskId').value;if(confirm('Supprimer cette tâche ?')){plan().buckets.forEach(b=>b.tasks=b.tasks.filter(t=>t.id!==id));$('taskDialog').close();render()}};
 $('cancelDialog').onclick=()=>$('taskDialog').close();
 $('cancelDeletePlanBtn').onclick=()=>$('deletePlanDialog').close();
@@ -684,7 +714,7 @@ $('planTitle').onchange=e=>{plan().title=e.target.value;render()};$('addBucketBt
 
 // ---------------- GOOGLE DRIVE SYNC ----------------
 
-const VERSION_LABEL = 'V40.9 STABLE';
+const VERSION_LABEL = 'V40.10 RDV + Calendrier';
 let driveConnectedForBanner = false;
 let lastSaveTimeForBanner = localStorage.getItem('mon-organiseur-last-save-time') || '--';
 let lastLocalSaveTimeForBanner = localStorage.getItem('mon-organiseur-last-local-save-time') || '--';
