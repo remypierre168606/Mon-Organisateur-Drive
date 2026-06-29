@@ -133,7 +133,17 @@ function appointmentsForCompany(company){
     return String(a.time||'99:99').localeCompare(String(b.time||'99:99'));
   });
 }
-function hasAppointmentTodayForCompany(company){ return appointmentsForCompany(company).some(a=>a.date===today()); }
+function appointmentShouldBlink(a){
+  if(!a || a.date!==today()) return false;
+  const time=String(a.time||'').trim();
+  // Si le RDV n'a pas d'heure, il clignote toute la journée.
+  if(!time) return true;
+  // Si le RDV a une heure, il clignote seulement tant que l'heure n'est pas passée.
+  const now=new Date();
+  const current=String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
+  return time>=current;
+}
+function hasAppointmentTodayForCompany(company){ return appointmentsForCompany(company).some(appointmentShouldBlink); }
 function appointmentTargetDate(company){
   const list=appointmentsForCompany(company);
   const td=today();
@@ -157,7 +167,7 @@ function appointmentDotHtml(t){
   if(!company) return '';
   const list=appointmentsForCompany(company);
   if(!list.length) return '';
-  const blink=list.some(a=>a.date===today());
+  const blink=list.some(appointmentShouldBlink);
   return `<button type="button" class="appointmentDot ${blink?'blink':''}" data-company="${esc(company)}" title="Voir les RDV ${esc(company)}" aria-label="Voir les RDV ${esc(company)}">●</button>`;
 }
 function appointmentCompanyOptions(selected=''){
@@ -327,7 +337,7 @@ function renderCalendar(){
     calendarDatesForTask(t).forEach(d=>{ (tasksByDate[d] ||= []).push(t); });
   });
   const apptsByDate=appointmentsByDate();
-  const apptHtml=(date)=> (apptsByDate[date]||[]).map(a=>`<div class="calAppt" data-appt="${a.id}" title="${esc(a.company||'RDV')}">${appointmentLabel(a)}</div>`).join('');
+  const apptHtml=(date)=> (apptsByDate[date]||[]).map(a=>`<div class="calAppt ${appointmentShouldBlink(a)?'blink':''}" data-appt="${a.id}" title="${esc(a.company||'RDV')}">${appointmentLabel(a)}</div>`).join('');
   const tasksForCalendar=(date)=> calendarRdvOnly ? [] : (tasksByDate[date]||[]);
   const rdvOnlyHtml=()=>`<label class="calendarRdvOnly"><input id="calendarRdvOnlyCheck" type="checkbox" ${calendarRdvOnly?'checked':''}> RDV uniquement</label>`;
   const switchHtml=(mode)=>`<div class="calendarSwitch"><button id="calMonthBtn" class="${mode==='month'?'activeSwitch':''}">Mois</button><button id="calWeekBtn" class="${mode==='week'?'activeSwitch':''}">Semaine</button><button id="calDayBtn" class="${mode==='day'?'activeSwitch':''}">Jour</button></div>`;
@@ -350,7 +360,7 @@ function renderCalendar(){
       <div class="calendarDayView">
         <section class="dayPanel">
           <h3>🟣 RDV</h3>
-          <div class="appointmentList">${appts.length?appts.map(a=>`<div class="appointmentItem"><div><strong>${appointmentLabel(a)}</strong>${a.notes?`<div class="small">${esc(a.notes)}</div>`:''}</div><div class="appointmentActions"><button class="editAppointmentBtn" data-appt="${a.id}">Modifier</button><button class="deleteAppointmentBtnSmall" data-appt="${a.id}">Supprimer</button></div></div>`).join(''):'<p class="emptyDay">Aucun RDV ce jour.</p>'}</div>
+          <div class="appointmentList">${appts.length?appts.map(a=>`<div class="appointmentItem ${appointmentShouldBlink(a)?'blink':''}"><div><strong>${appointmentLabel(a)}</strong>${a.notes?`<div class="small">${esc(a.notes)}</div>`:''}</div><div class="appointmentActions"><button class="editAppointmentBtn" data-appt="${a.id}">Modifier</button><button class="deleteAppointmentBtnSmall" data-appt="${a.id}">Supprimer</button></div></div>`).join(''):'<p class="emptyDay">Aucun RDV ce jour.</p>'}</div>
         </section>
         <section class="dayPanel">
           <h3>📋 Tâches du jour</h3>
@@ -647,7 +657,7 @@ function openTask(id,bid){
   $('taskCompany').innerHTML=companyOptions(t?.company||'');
   $('taskDueDate').value=t?.dueDate||'';
   if($('taskStartDate')) $('taskStartDate').value=t?.startDate||'';
-  if($('taskEndDate')) $('taskEndDate').value=t?.endDate||'';
+  if($('taskEndDate')) $('taskEndDate').value=t?.endDate||t?.dueDate||'';
   $('taskPriority').value=t?.priority||'normal';
   $('taskProgress').value=t?.progress||'todo';
   $('taskLinkName').value=(t?.linkName||t?.links?.[0]?.name||'');
@@ -662,6 +672,7 @@ function openTask(id,bid){
     $('taskBucket').innerHTML=plan().buckets.map(bb=>`<option value="${bb.id}">${esc(bb.title)}</option>`).join('');
   }
   $('deleteTaskBtn').style.visibility=id?'visible':'hidden';
+  if($('taskEndDate') && $('taskDueDate')){ $('taskEndDate').onchange=()=>{ if($('taskEndDate').value) $('taskDueDate').value=$('taskEndDate').value; }; }
   $('taskDialog').showModal();
 }
 function updateTaskBucketOptions(planIndex, selectedBucketId=''){
@@ -694,7 +705,25 @@ document.addEventListener('click', (e)=>{
   if(dot){ e.preventDefault(); e.stopPropagation(); openAppointmentDay(dot.dataset.company||''); }
 });
 
-$('taskForm').onsubmit=e=>{e.preventDefault();const id=$('taskId').value||uid();const found=findTaskGlobal(id);const old=found.t;const targetPlanIndex=$('taskPlan')?Number($('taskPlan').value):db.activePlan;const targetPlan=db.plans[targetPlanIndex]||plan();const t={id,title:$('taskTitle').value.trim(),notes:$('taskNotes').value.trim(),assignee:$('taskAssignee').value.trim(),company:$('taskCompany').value.trim(),dueDate:$('taskDueDate').value,startDate:$('taskStartDate')?$('taskStartDate').value:'',endDate:$('taskEndDate')?$('taskEndDate').value:'',priority:$('taskPriority').value,progress:$('taskProgress').value,linkName:$('taskLinkName').value.trim(),linkUrl:$('taskLinkUrl').value.trim()};db.plans.forEach(p=>(p.buckets||[]).forEach(b=>b.tasks=b.tasks.filter(x=>x.id!==id)));const targetBucket=(targetPlan.buckets||[]).find(b=>b.id===$('taskBucket').value)||targetPlan.buckets[0]; if(old){targetBucket.tasks.push(t)}else{targetBucket.tasks.unshift(t)}db.activePlan=targetPlanIndex;$('taskDialog').close();render()};
+$('taskForm').onsubmit=e=>{
+  e.preventDefault();
+  const id=$('taskId').value||uid();
+  const found=findTaskGlobal(id);
+  const old=found.t;
+  const targetPlanIndex=$('taskPlan')?Number($('taskPlan').value):db.activePlan;
+  const targetPlan=db.plans[targetPlanIndex]||plan();
+  const startDate=$('taskStartDate')?$('taskStartDate').value:'';
+  const endDate=$('taskEndDate')?$('taskEndDate').value:'';
+  // V40.11 : l'échéance correspond toujours à la date de fin calendrier si elle existe.
+  const dueDate=endDate || $('taskDueDate').value;
+  const t={id,title:$('taskTitle').value.trim(),notes:$('taskNotes').value.trim(),assignee:$('taskAssignee').value.trim(),company:$('taskCompany').value.trim(),dueDate,startDate,endDate,priority:$('taskPriority').value,progress:$('taskProgress').value,linkName:$('taskLinkName').value.trim(),linkUrl:$('taskLinkUrl').value.trim()};
+  db.plans.forEach(p=>(p.buckets||[]).forEach(b=>b.tasks=b.tasks.filter(x=>x.id!==id)));
+  const targetBucket=(targetPlan.buckets||[]).find(b=>b.id===$('taskBucket').value)||targetPlan.buckets[0];
+  if(old){targetBucket.tasks.push(t)}else{targetBucket.tasks.unshift(t)}
+  db.activePlan=targetPlanIndex;
+  $('taskDialog').close();
+  render();
+};
 $('deleteTaskBtn').onclick=()=>{const id=$('taskId').value;if(confirm('Supprimer cette tâche ?')){plan().buckets.forEach(b=>b.tasks=b.tasks.filter(t=>t.id!==id));$('taskDialog').close();render()}};
 $('cancelDialog').onclick=()=>$('taskDialog').close();
 $('cancelDeletePlanBtn').onclick=()=>$('deletePlanDialog').close();
@@ -714,7 +743,7 @@ $('planTitle').onchange=e=>{plan().title=e.target.value;render()};$('addBucketBt
 
 // ---------------- GOOGLE DRIVE SYNC ----------------
 
-const VERSION_LABEL = 'V40.10 RDV + Calendrier';
+const VERSION_LABEL = 'V40.11 RDV + Calendrier';
 let driveConnectedForBanner = false;
 let lastSaveTimeForBanner = localStorage.getItem('mon-organiseur-last-save-time') || '--';
 let lastLocalSaveTimeForBanner = localStorage.getItem('mon-organiseur-last-local-save-time') || '--';

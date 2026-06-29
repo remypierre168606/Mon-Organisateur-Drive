@@ -285,3 +285,7 @@
 @media(max-width:900px){
   .driveStatusGrid{grid-template-columns:1fr}
 }
+
+/* V40.11 - Clignotement RDV du jour */
+
+.calAppt.blink,.appointmentItem.blink{animation:appointmentBlink 1s infinite}
