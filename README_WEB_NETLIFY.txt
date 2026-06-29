@@ -68,3 +68,11 @@ V40.6 RDV : correction des ronds violets fantômes. Seuls les RDV créés avec l
 
 
 V40.7 : Calendrier - ajout d'une case compacte "RDV uniquement" dans les vues Jour/Semaine/Mois pour masquer les tâches et afficher seulement les rendez-vous.
+
+
+V40.8 STABLE : correction Drive
+- voyant Drive rouge si la connexion est perdue
+- sauvegarde locale permanente
+- sauvegarde Drive vérifiée avant écriture
+- état en attente de synchronisation si Drive est déconnecté
+- meilleure erreur si Google refuse une requête

@@ -684,35 +684,80 @@ $('planTitle').onchange=e=>{plan().title=e.target.value;render()};$('addBucketBt
 
 // ---------------- GOOGLE DRIVE SYNC ----------------
 
-const VERSION_LABEL = 'V40.7';
+const VERSION_LABEL = 'V40.8 STABLE';
 let driveConnectedForBanner = false;
 let lastSaveTimeForBanner = localStorage.getItem('mon-organiseur-last-save-time') || '--';
+let lastLocalSaveTimeForBanner = localStorage.getItem('mon-organiseur-last-local-save-time') || '--';
+let tokenExpiresAt = Number(localStorage.getItem('mon-organiseur-token-expires-at') || '0');
+let pendingDriveSync = localStorage.getItem('mon-organiseur-pending-sync') === '1';
+let driveHealthTimer = null;
 
+function nowLabel(date=new Date()){
+  return date.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+}
+function getDriveToken(){
+  try{
+    return (typeof gapi!=='undefined' && gapi.client && gapi.client.getToken) ? gapi.client.getToken() : null;
+  }catch{return null;}
+}
+function hasValidDriveToken(){
+  const token=getDriveToken();
+  if(!token || !token.access_token) return false;
+  if(tokenExpiresAt && Date.now() > (tokenExpiresAt - 60000)) return false;
+  return true;
+}
 function updateVersionBanner(){
   const el=$('versionBanner');
   if(!el) return;
-  el.textContent = `${VERSION_LABEL} | ${driveConnectedForBanner?'🟢 Drive connecté':'🔴 Drive déconnecté'} | 💾 ${lastSaveTimeForBanner}`;
+  const state = driveConnectedForBanner ? (pendingDriveSync ? '🟠 Drive à synchroniser' : '🟢 Drive connecté') : '🔴 Drive déconnecté';
+  el.textContent = `${VERSION_LABEL} | ${state} | 💾 Drive ${lastSaveTimeForBanner}`;
 }
 function setDriveBanner(connected){
-  driveConnectedForBanner = !!connected;
+  driveConnectedForBanner = !!connected && hasValidDriveToken();
+  if(!driveConnectedForBanner) driveReady=false;
   updateVersionBanner();
 }
+function setLocalSaveBanner(date=new Date()){
+  lastLocalSaveTimeForBanner = nowLabel(date);
+  localStorage.setItem('mon-organiseur-last-local-save-time', lastLocalSaveTimeForBanner);
+}
 function setSaveBanner(date=new Date()){
-  lastSaveTimeForBanner = date.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+  lastSaveTimeForBanner = nowLabel(date);
   localStorage.setItem('mon-organiseur-last-save-time', lastSaveTimeForBanner);
+  pendingDriveSync=false;
+  localStorage.setItem('mon-organiseur-pending-sync','0');
   updateVersionBanner();
+}
+function markPendingSync(){
+  pendingDriveSync=true;
+  localStorage.setItem('mon-organiseur-pending-sync','1');
+  updateVersionBanner();
+}
+function explainError(e){
+  if(!e) return 'Erreur inconnue';
+  if(typeof e==='string') return e;
+  const r=e.result?.error || e.error || e;
+  const code=r.code || e.status || '';
+  const msg=r.message || e.message || JSON.stringify(r);
+  return (code ? code+' - ' : '') + msg;
 }
 function status(msg){
   const el=$('syncStatus'); if(el) el.textContent = msg;
   if(String(msg||'').includes('Drive connecté')) setDriveBanner(true);
-  if(String(msg||'').includes('Drive déconnecté')) setDriveBanner(false);
+  if(String(msg||'').includes('Drive déconnecté') || String(msg||'').includes('Connexion Google Drive perdue')) setDriveBanner(false);
 }
 function clientId(){ return localStorage.getItem(CLIENT_ID_KEY) || ''; }
 
 function scheduleDriveAutosave(){
-  if(!driveReady) return;
+  setLocalSaveBanner();
+  markPendingSync();
+  if(!driveReady || !hasValidDriveToken()){
+    setDriveBanner(false);
+    status('Sauvegarde locale OK. Drive déconnecté : reconnecte Google Drive pour synchroniser.');
+    return;
+  }
   clearTimeout(autosaveTimer);
-  autosaveTimer = setTimeout(()=>saveToDrive(true), 1200);
+  autosaveTimer = setTimeout(()=>saveToDrive(true), 1500);
 }
 
 function initDriveUi(){
@@ -737,13 +782,12 @@ function initDriveUi(){
   if(disconnectBtn) disconnectBtn.onclick=(e)=>{ e.preventDefault(); disconnectDrive(); };
   updateVersionBanner();
   updateWebOriginHelp();
-  status('Interface Google Drive prête.');
+  status('Interface Google Drive prête. Dernière sauvegarde locale : '+lastLocalSaveTimeForBanner+'.');
+  startDriveHealthCheck();
 }
 
 function currentRedirectUri(){
-  // V36.2 : la connexion Google Drive utilise Google Identity Services en mode popup.
-  // Il n'y a plus d'URI de redirection à configurer pour la connexion.
-  return 'Pas nécessaire en V36.2 (connexion par fenêtre Google)';
+  return 'Pas nécessaire en V40.8 : connexion Google par fenêtre, sans URI de redirection.';
 }
 function updateWebOriginHelp(){
   const o=$('currentOriginText'); if(o) o.textContent=location.origin;
@@ -758,40 +802,47 @@ async function waitForGoogleLibraries(){
   await new Promise((resolve,reject)=>{ try{ gapi.load('client',resolve); }catch(e){ reject(e); } });
   await gapi.client.init({discoveryDocs:[DRIVE_DISCOVERY]});
 }
-async function finishOAuthRedirectIfNeeded(){
-  const hash=String(location.hash||'');
-  if(!hash.includes('access_token=')) return false;
-  const params=new URLSearchParams(hash.slice(1));
-  const token=params.get('access_token');
-  const err=params.get('error');
-  history.replaceState(null,'',location.pathname+location.search);
-  if(err){ status('Connexion refusée : '+err); alert('Connexion refusée : '+err); return true; }
-  if(!token) return false;
+async function finishOAuthRedirectIfNeeded(){ return false; }
+
+function startDriveHealthCheck(){
+  if(driveHealthTimer) clearInterval(driveHealthTimer);
+  driveHealthTimer=setInterval(()=>{
+    if(driveReady && !hasValidDriveToken()){
+      driveReady=false;
+      setDriveBanner(false);
+      status('Connexion Google Drive perdue. Sauvegarde locale OK, reconnecte Drive pour synchroniser.');
+    }
+  }, 30000);
+}
+
+async function ensureDriveUsable(silent=false){
+  if(!driveReady || !hasValidDriveToken()){
+    driveReady=false;
+    setDriveBanner(false);
+    if(!silent) alert('Google Drive n’est plus connecté. Clique sur “Se connecter à Google Drive”.');
+    status('Connexion Google Drive perdue. Sauvegarde locale OK, reconnecte Drive pour synchroniser.');
+    return false;
+  }
   try{
-    status('Connexion Google reçue. Initialisation Drive...');
-    await waitForGoogleLibraries();
-    gapi.client.setToken({access_token:token});
-    driveReady=true;
+    await gapi.client.drive.files.list({pageSize:1, fields:'files(id)'});
     setDriveBanner(true);
-    status('Drive connecté. Chargement de la sauvegarde...');
-    await loadFromDrive(true);
-    scheduleDriveAutosave();
+    return true;
   }catch(e){
     console.error(e);
-    status('Erreur après connexion Google. Voir console.');
-    alert('Erreur après connexion Google : '+(e?.message||e));
+    driveReady=false;
+    setDriveBanner(false);
+    if(!silent) alert('Google Drive a refusé la requête : '+explainError(e));
+    status('Connexion Google Drive perdue : '+explainError(e));
+    return false;
   }
-  return true;
 }
+
 async function connectDrive(){
   try{
     status('Préparation de la connexion Google...');
     const cid=clientId();
     if(!cid){ alert('Il faut d’abord créer/coller le Client ID Google.'); return; }
     if(location.protocol==='file:'){ alert('Google Drive ne fonctionne pas depuis file://. Utilise Netlify ou http://localhost:8000'); return; }
-
-    // V36.2 : nouvelle connexion Google Identity Services par popup.
-    // Avantage : plus de redirect_uri, donc plus d'erreur redirect_uri_mismatch.
     await waitForGoogleLibraries();
     if(typeof google==='undefined' || !google.accounts || !google.accounts.oauth2){
       throw new Error('Librairie Google Identity Services non chargée');
@@ -804,6 +855,7 @@ async function connectDrive(){
       callback: async (resp)=>{
         if(resp.error){
           console.error(resp);
+          driveReady=false; setDriveBanner(false);
           status('Connexion refusée : '+resp.error);
           alert('Connexion refusée : '+resp.error);
           return;
@@ -811,15 +863,24 @@ async function connectDrive(){
         try{
           status('Connexion Google reçue. Initialisation Drive...');
           gapi.client.setToken({access_token: resp.access_token});
+          const expiresIn = Number(resp.expires_in || 3600);
+          tokenExpiresAt = Date.now() + Math.max(60, expiresIn-30)*1000;
+          localStorage.setItem('mon-organiseur-token-expires-at', String(tokenExpiresAt));
           driveReady=true;
           setDriveBanner(true);
-          status('Drive connecté. Chargement de la sauvegarde...');
-          await loadFromDrive(true);
-          scheduleDriveAutosave();
+          status('Drive connecté. Vérification...');
+          const ok=await ensureDriveUsable(false);
+          if(ok){
+            status('Drive connecté. Chargement de la sauvegarde...');
+            await loadFromDrive(true);
+            if(pendingDriveSync) await saveToDrive(true);
+            scheduleDriveAutosave();
+          }
         }catch(e){
           console.error(e);
-          status('Erreur après connexion Google. Voir console.');
-          alert('Erreur après connexion Google : '+(e?.message||e));
+          driveReady=false; setDriveBanner(false);
+          status('Erreur après connexion Google : '+explainError(e));
+          alert('Erreur après connexion Google : '+explainError(e));
         }
       }
     });
@@ -828,16 +889,19 @@ async function connectDrive(){
     tokenClient.requestAccessToken({prompt:'consent'});
   }catch(e){
     console.error(e);
-    status('Erreur de connexion Google Drive. Voir console.');
-    alert('Erreur de connexion Google Drive : '+(e?.message||e));
+    driveReady=false; setDriveBanner(false);
+    status('Erreur de connexion Google Drive : '+explainError(e));
+    alert('Erreur de connexion Google Drive : '+explainError(e));
   }
 }
 
 function disconnectDrive(){
-  const token=(typeof gapi!=='undefined' && gapi.client && gapi.client.getToken)?gapi.client.getToken():null;
+  const token=getDriveToken();
   if(token && typeof google!=='undefined' && google.accounts && google.accounts.oauth2) google.accounts.oauth2.revoke(token.access_token);
   if(typeof gapi!=='undefined' && gapi.client) gapi.client.setToken('');
-  driveReady=false; status('Drive déconnecté.');
+  tokenExpiresAt=0;
+  localStorage.removeItem('mon-organiseur-token-expires-at');
+  driveReady=false; setDriveBanner(false); status('Drive déconnecté. Sauvegarde locale conservée.');
 }
 
 async function findDriveFile(){
@@ -851,20 +915,34 @@ async function findDriveFile(){
 }
 
 async function loadFromDrive(silent=false){
-  if(!driveReady){ if(!silent) alert('Connecte d’abord Google Drive.'); return; }
+  if(!await ensureDriveUsable(silent)) return;
   try{
     let id=driveFileId || await findDriveFile();
     if(!id){ status('Aucune sauvegarde Drive trouvée. Une nouvelle sera créée.'); await saveToDrive(true); return; }
     const res=await gapi.client.drive.files.get({fileId:id, alt:'media'});
     const incoming=typeof res.body==='string'?JSON.parse(res.body):res.result;
-    if(incoming && incoming.plans){ db=incoming; localStorage.setItem(KEY,JSON.stringify(db)); render(); setDriveBanner(true); status('Données chargées depuis Google Drive.'); }
-  }catch(e){ console.error(e); if(!silent) alert('Impossible de charger depuis Drive.'); status('Erreur de chargement Drive.'); }
+    if(incoming && incoming.plans){
+      db=incoming;
+      localStorage.setItem(KEY,JSON.stringify(db));
+      setLocalSaveBanner();
+      lastSavedSnapshot=JSON.stringify(db,null,2);
+      render();
+      setDriveBanner(true);
+      pendingDriveSync=false; localStorage.setItem('mon-organiseur-pending-sync','0'); updateVersionBanner();
+      status('Données chargées depuis Google Drive.');
+    }
+  }catch(e){
+    console.error(e);
+    if(!silent) alert('Impossible de charger depuis Drive : '+explainError(e));
+    if(String(explainError(e)).startsWith('401') || String(explainError(e)).startsWith('403')){driveReady=false; setDriveBanner(false);}
+    status('Erreur de chargement Drive : '+explainError(e));
+  }
 }
 
 async function saveToDrive(silent=false){
-  if(!driveReady) return;
+  if(!await ensureDriveUsable(silent)) return;
   const snapshot=JSON.stringify(db,null,2);
-  if(snapshot===lastSavedSnapshot && silent) return;
+  if(snapshot===lastSavedSnapshot && silent && !pendingDriveSync) return;
   try{
     status('Sauvegarde Drive...');
     let id=driveFileId || await findDriveFile();
@@ -878,13 +956,18 @@ async function saveToDrive(silent=false){
     lastSavedSnapshot=snapshot;
     setDriveBanner(true);
     setSaveBanner();
-    status('Sauvegardé automatiquement sur Google Drive à '+lastSaveTimeForBanner);
-  }catch(e){ console.error(e); if(!silent) alert('Impossible de sauvegarder sur Drive.'); status('Erreur de sauvegarde Drive.'); }
+    status('Sauvegardé sur Google Drive à '+lastSaveTimeForBanner+' | local '+lastLocalSaveTimeForBanner);
+  }catch(e){
+    console.error(e);
+    markPendingSync();
+    if(String(explainError(e)).startsWith('401') || String(explainError(e)).startsWith('403')){driveReady=false; setDriveBanner(false);}
+    if(!silent) alert('Impossible de sauvegarder sur Drive : '+explainError(e));
+    status('Erreur de sauvegarde Drive : '+explainError(e)+'. Sauvegarde locale OK.');
+  }
 }
 
 window.connectDrive = connectDrive;
 window.initDriveUi = initDriveUi;
-// Sécurité : même si un autre script remplace le bouton, ce clic sera capté.
 document.addEventListener('click', (e)=>{
   if(e.target && e.target.id==='connectDriveBtn'){
     e.preventDefault();
