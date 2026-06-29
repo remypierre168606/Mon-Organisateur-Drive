@@ -37,6 +37,9 @@ function plan(){return db.plans[db.activePlan]||db.plans[0]}
 function ensurePlanData(){
   if(!Array.isArray(db.assignees)) db.assignees=[];
   if(!Array.isArray(db.companies)) db.companies=[];
+  if(!Array.isArray(db.archivedTasks)) db.archivedTasks=[];
+  if(!Array.isArray(db.trashTasks)) db.trashTasks=[];
+  if(!db.companyInfos || typeof db.companyInfos!=='object' || Array.isArray(db.companyInfos)) db.companyInfos={};
   if(!Array.isArray(db.appointments)) db.appointments=[];
   db.plans.forEach(p=>{
     // Migration des anciennes versions : les responsables/entreprises étaient stockés dans chaque plan.
@@ -207,7 +210,30 @@ function allTasks(){return plan().buckets.flatMap(b=>b.tasks.map(t=>({...t,bucke
 function allPlanTasks(){return db.plans.flatMap((p,planIndex)=>(p.buckets||[]).flatMap(b=>(b.tasks||[]).map(t=>({...t,bucket:b,plan:p,planIndex}))))}
 function isLate(t){return t.dueDate && t.progress!=='done' && t.dueDate<today()}
 function pass(t){const q=$('searchInput').value.toLowerCase();const f=$('filterStatus').value;const text=[t.title,t.notes,t.assignee,t.company,t.dueDate,t.startDate,t.endDate,t.priority,t.progress,t.linkName,t.linkUrl].join(' ').toLowerCase();if(q&&!text.includes(q))return false;if(f==='todo'&&t.progress==='done')return false;if(f==='done'&&t.progress!=='done')return false;if(f==='late'&&!isLate(t))return false;return true}
-function render(){ensurePlanData();sortChoiceLists();renderPlans();$('planTitle').value=plan().title;document.querySelectorAll('.view').forEach(v=>v.classList.add('hidden'));const activeView=$(view+'View')||$('boardView');activeView.classList.remove('hidden');$('addAssigneeBtn').onclick=()=>{const name=prompt('Nom du responsable à ajouter ?','');if(!name)return;const clean=name.trim();if(!clean)return;ensurePlanData();if(!db.assignees.includes(clean)) db.assignees.push(clean);render();alert('Responsable ajouté : '+clean);};$('removeAssigneeBtn').onclick=()=>removeChoiceFromList('assignee');$('addCompanyBtn').onclick=()=>{const name=prompt('Nom de l’entreprise à ajouter ?','');if(!name)return;const clean=name.trim();if(!clean)return;ensurePlanData();if(!db.companies.includes(clean)) db.companies.push(clean);render();alert('Entreprise ajoutée : '+clean);};$('removeCompanyBtn').onclick=()=>removeChoiceFromList('company');document.querySelectorAll('.nav').forEach(n=>n.classList.toggle('active',n.dataset.view===view)); if(view==='board')renderBoard(); if(view==='list')renderList(); if(view==='calendar')renderCalendar(); if(view==='assignees')renderGroupedView('assignee'); if(view==='companies')renderGroupedView('company'); if(view==='priorities')renderPriorityView(); save()}
+function render(){
+  ensurePlanData();
+  archiveDoneTasks();
+  sortChoiceLists();
+  renderPlans();
+  $('planTitle').value=plan().title;
+  document.querySelectorAll('.view').forEach(v=>v.classList.add('hidden'));
+  const activeView=$(view+'View')||$('boardView');
+  activeView.classList.remove('hidden');
+  $('addAssigneeBtn').onclick=()=>{const name=prompt('Nom du responsable à ajouter ?','');if(!name)return;const clean=name.trim();if(!clean)return;ensurePlanData();if(!db.assignees.includes(clean)) db.assignees.push(clean);render();alert('Responsable ajouté : '+clean);};
+  $('removeAssigneeBtn').onclick=()=>removeChoiceFromList('assignee');
+  $('addCompanyBtn').onclick=()=>{const name=prompt('Nom de l’entreprise à ajouter ?','');if(!name)return;const clean=name.trim();if(!clean)return;ensurePlanData();if(!db.companies.includes(clean)) db.companies.push(clean);ensureCompanyInfo(clean);render();alert('Entreprise ajoutée : '+clean);};
+  $('removeCompanyBtn').onclick=()=>removeChoiceFromList('company');
+  document.querySelectorAll('.nav').forEach(n=>n.classList.toggle('active',n.dataset.view===view));
+  if(view==='board')renderBoard();
+  if(view==='list')renderList();
+  if(view==='calendar')renderCalendar();
+  if(view==='assignees')renderGroupedView('assignee');
+  if(view==='companies')renderGroupedView('company');
+  if(view==='priorities')renderPriorityView();
+  if(view==='archived')renderArchivedView();
+  if(view==='trash')renderTrashView();
+  save();
+}
 function renderPlans(){
   $('plansList').innerHTML=db.plans.map((p,i)=>`
     <div class="planItem ${i===db.activePlan?'active':''}" data-i="${i}">
@@ -271,7 +297,7 @@ function linkUrl(u){
 function linksHtml(t){
   const url=linkUrl(t.linkUrl||(t.links&&t.links[0]&&t.links[0].url)); const name=t.linkName||(t.links&&t.links[0]&&t.links[0].name); if(!url) return ''; return `<div class="taskLinksPreview"><a class="taskLink" href="${esc(url)}" target="_blank" rel="noopener noreferrer">🔗 ${esc(name||'Ouvrir le lien')}</a></div>`;
 }
-function card(t,bid){const el=document.createElement('article');el.className='card priority-'+(t.priority||'normal')+' '+(t.progress==='done'?'done':'');el.draggable=true;el.ondragstart=()=>drag=t.id;el.onclick=()=>openTask(t.id,bid);el.innerHTML=`${appointmentDotHtml(t)}<h3>${t.progress==='done'?'✅ ':''}${esc(t.title)}</h3><div class="meta">${t.priority!=='low'?`<span class="pill ${t.priority}">${prio(t.priority)}</span>`:''}${t.dueDate?`<span class="pill ${isLate(t)?'late':''}">📅 ${esc(t.dueDate)}</span>`:''}${t.assignee?`<span class="pill">👤 ${esc(t.assignee)}</span>`:''}${t.company?`<span class="pill">🏢 ${esc(t.company)}</span>`:''}</div>${linksHtml(t)}`;el.querySelectorAll('a.taskLink').forEach(a=>a.onclick=e=>e.stopPropagation());return el}
+function card(t,bid){const el=document.createElement('article');el.className='card priority-'+(t.priority||'normal')+' '+(t.progress==='done'?'done':'');el.draggable=true;el.ondragstart=()=>drag=t.id;el.onclick=()=>openTask(t.id,bid);el.innerHTML=`${appointmentDotHtml(t)}<h3>${t.progress==='done'?'✅ ':''}${esc(t.title)}</h3><div class="meta">${t.priority!=='low'?`<span class="pill ${t.priority}">${prio(t.priority)}</span>`:''}${t.dueDate?`<span class="pill ${isLate(t)?'late':''}">📅 ${esc(t.dueDate)}</span>`:''}${t.assignee?`<span class="pill">👤 ${esc(t.assignee)}</span>`:''}${t.company?`<span class="pill">🏢 ${esc(t.company)} <button class="inlineCompanyInfoBtn" data-company="${esc(t.company)}" title="Fiche entreprise">ⓘ</button></span>`:''}</div>${linksHtml(t)}`;el.querySelectorAll('a.taskLink').forEach(a=>a.onclick=e=>e.stopPropagation());return el}
 function listPriorityRank(p){return {urgent:0,high:1,normal:2,low:3}[p||'normal'] ?? 2}
 function listDateRank(d){return d ? d : '9999-99-99'}
 function renderList(){
@@ -564,13 +590,14 @@ function renderGroupedView(field){
   const entries=Object.entries(groups);
   root.innerHTML=`<div class="groupHeader"><h2>${icon} ${esc(title)}</h2><p>Vue globale : toutes les tâches de tous les plans. Clique sur <strong>Ouvrir</strong> pour afficher une page dédiée.</p></div>`+
     (entries.length?`<div class="groupGrid">${entries.map(([name,items])=>`<section class="groupBox" data-value="${encodeURIComponent(name)}">
-      <h3><span>${esc(name)} <span class="count">${items.length}</span></span><button class="openGroupBtn" data-field="${field}" data-name="${encodeURIComponent(name)}">Ouvrir</button></h3>
+      <h3><span>${esc(name)} <span class="count">${items.length}</span></span><span class="groupActions">${field==='company'?`<button class="companyInfoOpenBtn openGroupBtn" data-company="${esc(name)}">ⓘ Fiche</button>`:''}<button class="openGroupBtn" data-field="${field}" data-name="${encodeURIComponent(name)}">Ouvrir</button></span></h3>
       <div class="groupTasks">${items.slice(0,6).map(t=>taskRowForGroup(t,field)).join('')}${items.length>6?`<div class="small">+ ${items.length-6} tâche(s) dans la page dédiée</div>`:''}</div>
     </section>`).join('')}</div>`:`<p>Aucune tâche trouvée pour ${esc(empty.toLowerCase())}.</p>`);
   root.querySelectorAll('.openGroupBtn').forEach(btn=>btn.onclick=(e)=>{
     e.stopPropagation();
     renderGroupDetail(field,decodeURIComponent(btn.dataset.name));
   });
+  root.querySelectorAll('.companyInfoOpenBtn').forEach(btn=>btn.onclick=(e)=>{e.stopPropagation();openCompanyInfo(btn.dataset.company||'');});
   attachGroupTaskClicks(root);
   attachGroupDrop(root, field);
 }
@@ -644,7 +671,7 @@ function taskRowForPriority(t){
     <div class="groupMeta">
       ${t.dueDate?`<span class="pill ${isLate(t)?'late':''}">📅 ${esc(t.dueDate)}</span>`:''}
       ${t.assignee?`<span class="pill">👤 ${esc(t.assignee)}</span>`:''}
-      ${t.company?`<span class="pill">🏢 ${esc(t.company)}</span>`:''}
+      ${t.company?`<span class="pill">🏢 ${esc(t.company)} <button class="inlineCompanyInfoBtn" data-company="${esc(t.company)}" title="Fiche entreprise">ⓘ</button></span>`:''}
     </div>
   </div>`;
 }
@@ -746,6 +773,8 @@ $('appointmentForm').onsubmit=e=>{
 $('cancelAppointmentDialog').onclick=()=>$('appointmentDialog').close();
 $('deleteAppointmentBtn').onclick=()=>{const id=$('appointmentId').value;if(id){deleteAppointment(id);$('appointmentDialog').close();}};
 document.addEventListener('click', (e)=>{
+  const info=e.target.closest('.inlineCompanyInfoBtn');
+  if(info){ e.preventDefault(); e.stopPropagation(); openCompanyInfo(info.dataset.company||''); return; }
   const dot=e.target.closest('.appointmentDot');
   if(dot){ e.preventDefault(); e.stopPropagation(); openAppointmentDay(dot.dataset.company||''); }
 });
@@ -764,12 +793,16 @@ $('taskForm').onsubmit=e=>{
   const t={id,title:$('taskTitle').value.trim(),notes:$('taskNotes').value.trim(),assignee:$('taskAssignee').value.trim(),company:$('taskCompany').value.trim(),dueDate,startDate,endDate,priority:$('taskPriority').value,progress:$('taskProgress').value,linkName:$('taskLinkName').value.trim(),linkUrl:$('taskLinkUrl').value.trim()};
   db.plans.forEach(p=>(p.buckets||[]).forEach(b=>b.tasks=b.tasks.filter(x=>x.id!==id)));
   const targetBucket=(targetPlan.buckets||[]).find(b=>b.id===$('taskBucket').value)||targetPlan.buckets[0];
-  if(old){targetBucket.tasks.push(t)}else{targetBucket.tasks.unshift(t)}
-  db.activePlan=targetPlanIndex;
+  if(t.progress==='done'){
+    archiveTaskRecord(t,{planTitle:targetPlan.title,bucketTitle:targetBucket?.title,planIndex:targetPlanIndex});
+  }else{
+    if(old){targetBucket.tasks.push(t)}else{targetBucket.tasks.unshift(t)}
+    db.activePlan=targetPlanIndex;
+  }
   $('taskDialog').close();
   render();
 };
-$('deleteTaskBtn').onclick=()=>{const id=$('taskId').value;if(confirm('Supprimer cette tâche ?')){plan().buckets.forEach(b=>b.tasks=b.tasks.filter(t=>t.id!==id));$('taskDialog').close();render()}};
+$('deleteTaskBtn').onclick=()=>{const id=$('taskId').value;if(confirm('Envoyer cette tâche dans la corbeille ?')){moveTaskToTrash(id);$('taskDialog').close();render()}};
 $('cancelDialog').onclick=()=>$('taskDialog').close();
 $('cancelDeletePlanBtn').onclick=()=>$('deletePlanDialog').close();
 $('confirmDeletePlanCheck').onchange=e=>{$('confirmDeletePlanBtn').disabled=!e.target.checked};
@@ -786,9 +819,150 @@ $('confirmDeletePlanBtn').onclick=()=>{
 $('planTitle').onchange=e=>{plan().title=e.target.value;render()};$('addBucketBtn').onclick=()=>{const title=prompt('Nom de la colonne ?','Nouvelle colonne');if(title){plan().buckets.push({id:uid(),title,tasks:[]});render()}};$('addTaskTopBtn').onclick=()=>openTask(null,plan().buckets[0].id);$('newPlanBtn').onclick=()=>{const title=prompt('Nom du nouveau plan ?','Nouveau plan');if(title){db.plans.push({id:uid(),title,buckets:[{id:uid(),title:'À faire',tasks:[]},{id:uid(),title:'En cours',tasks:[]},{id:uid(),title:'Terminé',tasks:[]}]});db.activePlan=db.plans.length-1;render()}};document.querySelectorAll('.nav').forEach(n=>n.onclick=()=>{view=n.dataset.view;render()});$('searchInput').oninput=render;$('filterStatus').onchange=render;$('exportBtn').onclick=()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(db,null,2)],{type:'application/json'}));a.download='mon-organiseur-sauvegarde.json';a.click()};$('importInput').onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{db=JSON.parse(r.result);render()}catch{alert('Fichier non valide')}};r.readAsText(f)};$('resetBtn').onclick=()=>{if(confirm('Tout effacer et remettre le modèle de départ ?')){db=starter();render()}};
 
 
+
+// ---------------- V41 ARCHIVES, CORBEILLE ET FICHES ENTREPRISE ----------------
+function taskStorageClone(t, meta={}){
+  return {...t, _meta:{...(t._meta||{}), ...meta}};
+}
+function archiveTaskRecord(t, meta={}){
+  ensurePlanData();
+  db.archivedTasks=db.archivedTasks.filter(x=>x.id!==t.id);
+  db.trashTasks=db.trashTasks.filter(x=>x.id!==t.id);
+  db.archivedTasks.unshift(taskStorageClone({...t,progress:'done'}, {...meta, archivedAt:new Date().toISOString()}));
+}
+function archiveDoneTasks(){
+  ensurePlanData();
+  db.plans.forEach((p,planIndex)=>(p.buckets||[]).forEach(b=>{
+    const keep=[];
+    (b.tasks||[]).forEach(t=>{
+      if(t.progress==='done') archiveTaskRecord(t,{planTitle:p.title,bucketTitle:b.title,planIndex});
+      else keep.push(t);
+    });
+    b.tasks=keep;
+  }));
+}
+function moveTaskToTrash(id){
+  ensurePlanData();
+  const found=findTaskGlobal(id);
+  if(!found.t) return;
+  db.trashTasks=db.trashTasks.filter(x=>x.id!==id);
+  db.trashTasks.unshift(taskStorageClone(found.t,{deletedAt:new Date().toISOString(),planTitle:found.plan?.title||'',bucketTitle:found.b?.title||'',planIndex:found.planIndex||0}));
+  found.b.tasks=(found.b.tasks||[]).filter(t=>t.id!==id);
+}
+function restoreTaskFromList(source,id){
+  ensurePlanData();
+  const list=source==='archive'?db.archivedTasks:db.trashTasks;
+  const t=list.find(x=>x.id===id);
+  if(!t) return;
+  if(source==='archive') db.archivedTasks=db.archivedTasks.filter(x=>x.id!==id); else db.trashTasks=db.trashTasks.filter(x=>x.id!==id);
+  const targetPlan=db.plans[t._meta?.planIndex]||db.plans[0];
+  const targetBucket=(targetPlan.buckets||[]).find(b=>b.title===t._meta?.bucketTitle)||targetPlan.buckets?.[0];
+  const clean={...t,progress:source==='archive'?'todo':(t.progress==='done'?'todo':t.progress)};
+  delete clean._meta;
+  if(targetBucket) targetBucket.tasks.unshift(clean);
+  db.activePlan=db.plans.indexOf(targetPlan);
+  view='board';
+  render();
+}
+function deleteStoredTaskForever(source,id){
+  if(!confirm('Supprimer définitivement cette tâche ?')) return;
+  if(source==='archive') db.archivedTasks=db.archivedTasks.filter(x=>x.id!==id); else db.trashTasks=db.trashTasks.filter(x=>x.id!==id);
+  render();
+}
+function storedTaskRow(t,source){
+  const m=t._meta||{};
+  return `<div class="archiveTask priority-${t.priority||'normal'}">
+    <div><strong>${esc(t.title||'Sans titre')}</strong><div class="small">Plan : ${esc(m.planTitle||'')} · Colonne : ${esc(m.bucketTitle||'')} · ${source==='archive'?'Archivée':'Supprimée'} le ${esc(((m.archivedAt||m.deletedAt||'').slice(0,10)))}</div></div>
+    <div class="groupMeta">${t.company?`<span class="pill">🏢 ${esc(t.company)}</span>`:''}${t.dueDate?`<span class="pill">📅 ${esc(t.dueDate)}</span>`:''}<span class="pill">${esc(prio(t.priority||'normal'))}</span></div>
+    <div class="archiveActions"><button data-action="restore" data-source="${source}" data-id="${esc(t.id)}">↩️ Restaurer</button><button class="dangerButton" data-action="deleteForever" data-source="${source}" data-id="${esc(t.id)}">❌ Supprimer définitivement</button></div>
+  </div>`;
+}
+function renderArchivedView(){
+  ensurePlanData();
+  const root=$('archivedView');
+  root.innerHTML=`<div class="groupHeader"><h2>📦 Tâches archivées</h2><p>Les tâches terminées sont masquées des vues principales et restent récupérables ici.</p></div>${db.archivedTasks.length?`<div class="archiveList">${db.archivedTasks.map(t=>storedTaskRow(t,'archive')).join('')}</div>`:'<p>Aucune tâche archivée.</p>'}`;
+  attachStoredTaskActions(root);
+}
+function renderTrashView(){
+  ensurePlanData();
+  const root=$('trashView');
+  root.innerHTML=`<div class="groupHeader"><h2>🗑️ Corbeille</h2><p>Les tâches supprimées restent récupérables ici.</p>${db.trashTasks.length?'<button id="emptyTrashBtn" class="dangerButton">Vider la corbeille</button>':''}</div>${db.trashTasks.length?`<div class="archiveList">${db.trashTasks.map(t=>storedTaskRow(t,'trash')).join('')}</div>`:'<p>La corbeille est vide.</p>'}`;
+  if($('emptyTrashBtn')) $('emptyTrashBtn').onclick=()=>{if(confirm('Vider définitivement toute la corbeille ?')){db.trashTasks=[];render();}};
+  attachStoredTaskActions(root);
+}
+function attachStoredTaskActions(root){
+  root.querySelectorAll('[data-action="restore"]').forEach(btn=>btn.onclick=()=>restoreTaskFromList(btn.dataset.source==='archive'?'archive':'trash',btn.dataset.id));
+  root.querySelectorAll('[data-action="deleteForever"]').forEach(btn=>btn.onclick=()=>deleteStoredTaskForever(btn.dataset.source==='archive'?'archive':'trash',btn.dataset.id));
+}
+function ensureCompanyInfo(name){
+  ensurePlanData();
+  const key=(name||'').trim();
+  if(!key) return null;
+  if(!db.companyInfos[key]) db.companyInfos[key]={name:key,phone:'',mobile:'',email:'',website:'',address:'',zip:'',city:'',country:'',vat:'',ide:'',contacts:[],notes:'',updatedAt:''};
+  return db.companyInfos[key];
+}
+function setCompanyTab(tab){
+  document.querySelectorAll('.companyTab').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));
+  $('companyTabGeneral').classList.toggle('hidden',tab!=='general');
+  $('companyTabContacts').classList.toggle('hidden',tab!=='contacts');
+  $('companyTabNotes').classList.toggle('hidden',tab!=='notes');
+}
+function renderCompanyContacts(contacts=[]){
+  const root=$('companyContactsList');
+  root.innerHTML=(contacts.length?contacts:[{firstName:'',lastName:'',role:'',phone:'',mobile:'',email:'',notes:''}]).map((c,i)=>`<div class="companyContactCard" data-i="${i}">
+    <div class="grid2"><label>Prénom<input data-field="firstName" value="${esc(c.firstName||'')}"></label><label>Nom<input data-field="lastName" value="${esc(c.lastName||'')}"></label></div>
+    <div class="grid2"><label>Fonction<input data-field="role" value="${esc(c.role||'')}"></label><label>E-mail<input data-field="email" value="${esc(c.email||'')}"></label></div>
+    <div class="grid2"><label>Téléphone<input data-field="phone" value="${esc(c.phone||'')}"></label><label>Mobile<input data-field="mobile" value="${esc(c.mobile||'')}"></label></div>
+    <label>Notes<textarea data-field="notes" rows="2">${esc(c.notes||'')}</textarea></label>
+    <button type="button" class="removeCompanyContactBtn">Supprimer ce contact</button>
+  </div>`).join('');
+}
+function collectCompanyContacts(){
+  return [...document.querySelectorAll('.companyContactCard')].map(card=>{
+    const o={};
+    card.querySelectorAll('[data-field]').forEach(el=>o[el.dataset.field]=el.value.trim());
+    return o;
+  }).filter(c=>Object.values(c).some(Boolean));
+}
+function openCompanyInfo(name){
+  const key=(name||'').trim();
+  if(!key){alert('Aucune entreprise sur cette tâche.');return;}
+  const info=ensureCompanyInfo(key);
+  $('companyInfoTitle').textContent='🏢 Fiche entreprise : '+key;
+  $('companyInfoName').value=key;
+  $('companyFieldName').value=info.name||key;
+  $('companyPhone').value=info.phone||'';
+  $('companyMobile').value=info.mobile||'';
+  $('companyEmail').value=info.email||'';
+  $('companyWebsite').value=info.website||'';
+  $('companyAddress').value=info.address||'';
+  $('companyZip').value=info.zip||'';
+  $('companyCity').value=info.city||'';
+  $('companyCountry').value=info.country||'';
+  $('companyVat').value=info.vat||'';
+  $('companyIde').value=info.ide||'';
+  $('companyNotes').value=info.notes||'';
+  renderCompanyContacts(info.contacts||[]);
+  setCompanyTab('general');
+  $('companyInfoDialog').showModal();
+}
+function saveCompanyInfoFromDialog(){
+  const key=$('companyInfoName').value.trim();
+  if(!key) return;
+  db.companyInfos[key]={name:$('companyFieldName').value.trim()||key,phone:$('companyPhone').value.trim(),mobile:$('companyMobile').value.trim(),email:$('companyEmail').value.trim(),website:$('companyWebsite').value.trim(),address:$('companyAddress').value.trim(),zip:$('companyZip').value.trim(),city:$('companyCity').value.trim(),country:$('companyCountry').value.trim(),vat:$('companyVat').value.trim(),ide:$('companyIde').value.trim(),contacts:collectCompanyContacts(),notes:$('companyNotes').value.trim(),updatedAt:new Date().toISOString()};
+}
+if($('companyInfoForm')){
+  document.querySelectorAll('.companyTab').forEach(btn=>btn.onclick=()=>setCompanyTab(btn.dataset.tab));
+  $('addCompanyContactBtn').onclick=()=>{const contacts=collectCompanyContacts();contacts.push({});renderCompanyContacts(contacts);};
+  $('companyContactsList').addEventListener('click',e=>{if(e.target.closest('.removeCompanyContactBtn')){e.target.closest('.companyContactCard').remove();}});
+  $('cancelCompanyInfoBtn').onclick=()=>$('companyInfoDialog').close();
+  $('companyInfoForm').onsubmit=e=>{e.preventDefault();saveCompanyInfoFromDialog();$('companyInfoDialog').close();render();};
+}
+
+
 // ---------------- GOOGLE DRIVE SYNC ----------------
 
-const VERSION_LABEL = 'V40.12 Calendrier';
+const VERSION_LABEL = 'V41';
 let driveConnectedForBanner = false;
 let lastSaveTimeForBanner = localStorage.getItem('mon-organiseur-last-save-time') || '--';
 let lastLocalSaveTimeForBanner = localStorage.getItem('mon-organiseur-last-local-save-time') || '--';

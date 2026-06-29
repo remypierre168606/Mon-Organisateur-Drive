@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Mon Organiseur Drive V40.12 Calendrier</title>
+  <title>Mon Organiseur Drive V41</title>
   <link rel="stylesheet" href="style.css" />
   <style>
     .syncbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px}.syncbar button{padding:8px 10px;border-radius:10px;border:1px solid #d9dde8;background:#fff;cursor:pointer}.syncbar .primary{background:#2563eb;color:#fff;border-color:#2563eb}.syncStatus{font-size:12px;color:#475569}.setupBox{background:#fff7ed;border:1px solid #fed7aa;padding:10px;border-radius:12px;margin-top:10px}.setupBox input{width:min(520px,100%);padding:8px;border:1px solid #ddd;border-radius:8px}.hiddenSetup{display:none}.cloudBadge{font-size:12px;background:#e0f2fe;color:#075985;padding:4px 8px;border-radius:999px}
@@ -11,7 +11,7 @@
 </head>
 <body>
   <aside class="sidebar">
-    <div class="brand"><div class="logo">O</div><div><strong>Mon Organiseur</strong><span>version Drive V40.12 Calendrier</span></div></div>
+    <div class="brand"><div class="logo">O</div><div><strong>Mon Organiseur</strong><span>version Drive V41</span></div></div>
     <button class="nav active" data-view="settings">⚙️ Drive</button>
     <button class="nav" data-view="board">📋 Tableau</button>
     <button class="nav" data-view="list">☑️ Liste</button>
@@ -19,6 +19,8 @@
     <button class="nav" data-view="assignees">👤 Responsable</button>
     <button class="nav" data-view="companies">🏢 Entreprise</button>
     <button class="nav" data-view="priorities">📌 Priorité</button>
+    <button class="nav" data-view="archived">📦 Tâches archivées</button>
+    <button class="nav" data-view="trash">🗑️ Corbeille</button>
     <hr>
     <button id="newPlanBtn" class="ghost">+ Nouveau plan</button>
     <div id="plansList" class="plans"></div>
@@ -29,7 +31,7 @@
   </aside>
 
   <main class="app">
-    <div id="versionBanner" class="versionBanner">V40.12 Calendrier | 🔴 Drive déconnecté | 💾 Drive --</div>
+    <div id="versionBanner" class="versionBanner">V41 | 🔴 Drive déconnecté | 💾 Drive --</div>
     <header class="topbar topbarCompact">
       <div class="topIdentity">
         <input id="planTitle" class="planTitle" aria-label="Nom du plan">
@@ -99,6 +101,8 @@
     <section id="assigneesView" class="view hidden"></section>
     <section id="companiesView" class="view hidden"></section>
     <section id="prioritiesView" class="view hidden"></section>
+    <section id="archivedView" class="view hidden"></section>
+    <section id="trashView" class="view hidden"></section>
   </main>
 
   <dialog id="taskDialog">
@@ -131,6 +135,35 @@
     </form>
   </dialog>
 
+
+  <dialog id="companyInfoDialog" class="companyInfoDialog">
+    <form id="companyInfoForm" method="dialog">
+      <h2 id="companyInfoTitle">Fiche entreprise</h2>
+      <input type="hidden" id="companyInfoName">
+      <div class="companyTabs">
+        <button type="button" class="companyTab active" data-tab="general">📋 Général</button>
+        <button type="button" class="companyTab" data-tab="contacts">👤 Contacts</button>
+        <button type="button" class="companyTab" data-tab="notes">📝 Notes</button>
+      </div>
+      <section id="companyTabGeneral" class="companyTabPane">
+        <div class="grid2"><label>Nom<input id="companyFieldName"></label><label>Téléphone<input id="companyPhone"></label></div>
+        <div class="grid2"><label>Mobile<input id="companyMobile"></label><label>E-mail<input id="companyEmail" type="email"></label></div>
+        <div class="grid2"><label>Site Internet<input id="companyWebsite" placeholder="https://..."></label><label>Pays<input id="companyCountry"></label></div>
+        <label>Adresse<input id="companyAddress"></label>
+        <div class="grid2"><label>NPA<input id="companyZip"></label><label>Ville<input id="companyCity"></label></div>
+        <div class="grid2"><label>TVA<input id="companyVat"></label><label>IDE<input id="companyIde"></label></div>
+      </section>
+      <section id="companyTabContacts" class="companyTabPane hidden">
+        <div id="companyContactsList" class="companyContactsList"></div>
+        <button type="button" id="addCompanyContactBtn">+ Ajouter un contact</button>
+      </section>
+      <section id="companyTabNotes" class="companyTabPane hidden">
+        <label>Notes<textarea id="companyNotes" rows="8" placeholder="Procédures, codes, horaires, remarques..."></textarea></label>
+      </section>
+      <menu><button type="button" id="cancelCompanyInfoBtn">Annuler</button><span></span><button type="submit" class="primary">Enregistrer</button></menu>
+    </form>
+  </dialog>
+
   <dialog id="deletePlanDialog">
     <form method="dialog" class="deletePlanForm">
       <h2>Supprimer le plan</h2>
@@ -152,6 +185,6 @@
 
   <script src="https://accounts.google.com/gsi/client"></script>
   <script src="https://apis.google.com/js/api.js"></script>
-  <script src="app.js?v=408"></script>
+  <script src="app.js?v=41"></script>
 </body>
 </html>
