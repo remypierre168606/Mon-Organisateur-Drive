@@ -1193,7 +1193,7 @@ if($('companyInfoForm')){
 
 // ---------------- GOOGLE DRIVE SYNC ----------------
 
-const VERSION_LABEL = 'V44';
+const VERSION_LABEL = 'V45';
 let driveConnectedForBanner = false;
 let lastSaveTimeForBanner = localStorage.getItem('mon-organiseur-last-save-time') || '--';
 let lastLocalSaveTimeForBanner = localStorage.getItem('mon-organiseur-last-local-save-time') || '--';
@@ -1288,7 +1288,7 @@ function scheduleDriveAutosave(){
     return;
   }
   clearTimeout(autosaveTimer);
-  autosaveTimer = setTimeout(()=>saveToDrive(true), 1500);
+  autosaveTimer = setTimeout(()=>saveToDrive(true), 5000);
 }
 
 function initDriveUi(){
@@ -1338,11 +1338,16 @@ async function finishOAuthRedirectIfNeeded(){ return false; }
 
 function startDriveHealthCheck(){
   if(driveHealthTimer) clearInterval(driveHealthTimer);
-  driveHealthTimer=setInterval(()=>{
+  driveHealthTimer=setInterval(async ()=>{
     if(driveReady && !hasValidDriveToken()){
       driveReady=false;
       setDriveBanner(false);
       status('Connexion Google Drive perdue. Sauvegarde locale OK, reconnecte Drive pour synchroniser.');
+      return;
+    }
+    // V45 : si des modifications attendent et que Drive est disponible, on tente une synchronisation automatique.
+    if(driveReady && hasValidDriveToken() && pendingDriveSync){
+      await saveToDrive(true);
     }
   }, 30000);
 }
@@ -1506,5 +1511,18 @@ document.addEventListener('click', (e)=>{
     connectDrive();
   }
 });
+// V45 : dernière tentative de synchronisation quand la page passe en arrière-plan.
+// La sauvegarde locale est déjà immédiate ; cette partie essaie seulement de pousser vers Drive si possible.
+document.addEventListener('visibilitychange', ()=>{
+  if(document.visibilityState==='hidden' && pendingDriveSync && driveReady && hasValidDriveToken()){
+    try{ saveToDrive(true); }catch(e){ console.warn(e); }
+  }
+});
+window.addEventListener('beforeunload', ()=>{
+  if(pendingDriveSync && driveReady && hasValidDriveToken()){
+    try{ saveToDrive(true); }catch(e){ console.warn(e); }
+  }
+});
+
 async function startApp(){ initDriveUi(); render(); await finishOAuthRedirectIfNeeded(); }
 if(document.readyState==='loading'){ document.addEventListener('DOMContentLoaded', startApp); } else { startApp(); }

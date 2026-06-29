@@ -1,15 +1,17 @@
-MON ORGANISEUR DRIVE - VERSION V44
+MON ORGANISEUR DRIVE - VERSION V45 SAUVEGARDE PRO
 
-Version basée sur V42.1.
+Version basée sur V44.
 
-Nouveautés V44 :
-- Page Entreprises : affiche toutes les entreprises créées, même sans tâche.
-- Les fiches entreprises restent accessibles avec 0 tâche.
+Nouveautés V45 :
+- Sauvegarde locale instantanée à chaque modification.
+- Sauvegarde Google Drive automatique après modification, avec délai de 5 secondes.
+- Vérification régulière de la connexion Drive.
+- Voyant et panneau Drive plus fiables : connecté, à synchroniser, déconnecté.
+- Tentative de synchronisation automatique quand la connexion est disponible.
+- Tentative de sauvegarde Drive quand la page passe en arrière-plan ou se ferme.
 
-Anciennes nouveautés V43 :
-- Les documents envoyés depuis une tâche ou une fiche entreprise vont directement dans le dossier Google Drive ORGANISEUR_DOSSIERS.
-- Le fichier reçoit un nom technique unique sur Google Drive pour éviter les doublons.
-- Le nom affiché dans l’Organiseur reste celui saisi dans la fiche tâche ou entreprise.
-- Le lien Google Drive est conservé pour ouvrir/télécharger/supprimer le document.
+Non inclus volontairement :
+- Pas de sauvegardes JSON datées automatiques.
+- L'export JSON reste manuel via le bouton Exporter JSON.
 
-Installation : remplacer les fichiers du dépôt GitHub par ceux de ce dossier.
+Installation : remplacer les fichiers du dépôt GitHub par ceux de ce ZIP puis attendre le déploiement Netlify.
