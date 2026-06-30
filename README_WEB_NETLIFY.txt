@@ -15,3 +15,10 @@ Non inclus volontairement :
 - L'export JSON reste manuel via le bouton Exporter JSON.
 
 Installation : remplacer les fichiers du dépôt GitHub par ceux de ce ZIP puis attendre le déploiement Netlify.
+
+
+V50 - ERGONOMIE
+- Interface plus lisible et plus confortable.
+- Barre supérieure et menu latéral améliorés.
+- Cartes, listes, calendrier et fenêtres mieux organisés.
+- Raccourcis : Ctrl+K pour rechercher, Ctrl+N pour nouvelle tâche.

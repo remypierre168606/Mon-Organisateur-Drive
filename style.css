@@ -694,3 +694,108 @@ dialog h2{color:#25185c!important;margin-top:0}.taskDocumentBox{background:#f8f7
 @media(max-width:900px){
   .sidebar{width:auto!important}.view{padding:14px!important}.topbarCompact{border-radius:0!important}.bucket{min-width:285px!important;width:285px!important}
 }
+
+
+/* =========================
+   V50 - ERGONOMIE GLOBALE
+   Objectif : rendre l'application plus simple à lire, cliquer et utiliser.
+   Aucune logique Drive n'est modifiée ici.
+   ========================= */
+:root{
+  --v50-purple:#6d28d9;
+  --v50-purple2:#8b5cf6;
+  --v50-ink:#181032;
+  --v50-panel:#ffffffd9;
+  --v50-border:#e6e0ff;
+  --v50-soft:#f6f3ff;
+  --v50-shadow:0 12px 34px rgba(31,25,78,.11);
+  --v50-shadow-hover:0 18px 44px rgba(31,25,78,.18);
+}
+html{scroll-behavior:smooth}
+body{background:linear-gradient(135deg,#f7f8ff 0%,#f4f1ff 42%,#f7fbff 100%)!important;color:var(--v50-ink)!important}
+button,select,input,textarea{transition:border-color .16s ease, box-shadow .16s ease, transform .12s ease, background .16s ease!important}
+button:hover{transform:translateY(-1px)}
+button:active{transform:translateY(0)}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid rgba(139,92,246,.28)!important;outline-offset:2px!important;border-color:#a78bfa!important;box-shadow:0 0 0 4px rgba(139,92,246,.12)!important}
+
+/* Menu latéral plus lisible */
+.sidebar{
+  width:262px!important;
+  padding:16px 14px!important;
+  background:linear-gradient(180deg,#18122f,#111827 72%)!important;
+  box-shadow:8px 0 32px rgba(17,12,45,.12)!important;
+  position:sticky!important;
+  top:0!important;
+  height:100vh!important;
+  overflow:auto!important;
+}
+.sidebar::-webkit-scrollbar,.cards::-webkit-scrollbar,.board::-webkit-scrollbar{height:10px;width:10px}.sidebar::-webkit-scrollbar-thumb,.cards::-webkit-scrollbar-thumb,.board::-webkit-scrollbar-thumb{background:#c4b5fd;border-radius:999px}.sidebar::-webkit-scrollbar-track,.cards::-webkit-scrollbar-track,.board::-webkit-scrollbar-track{background:#f3f0ff;border-radius:999px}
+.brand{background:rgba(255,255,255,.06)!important;border:1px solid rgba(255,255,255,.09)!important;border-radius:18px!important;padding:10px!important;margin-bottom:12px!important}
+.logo{background:linear-gradient(135deg,#7c3aed,#4f46e5)!important;box-shadow:0 10px 22px rgba(124,58,237,.32)!important}
+.nav,.ghost,.fileBtn{border-radius:14px!important;padding:10px 12px!important;min-height:40px!important;font-weight:800!important;color:#eef2ff!important}
+.nav:hover,.ghost:hover,.fileBtn:hover{background:rgba(255,255,255,.10)!important}
+.nav.active{background:linear-gradient(135deg,#7c3aed,#5b5ff7)!important;box-shadow:0 10px 22px rgba(124,58,237,.28)!important;color:white!important}
+.sidebar hr{border:0;border-top:1px solid rgba(255,255,255,.12)!important;width:100%;margin:8px 0!important}
+
+/* Bandeau haut : moins fouillis, actions mieux groupées */
+.versionBanner{
+  background:rgba(255,255,255,.78)!important;
+  backdrop-filter:blur(12px)!important;
+  color:#3b2b6f!important;
+  border-bottom:1px solid var(--v50-border)!important;
+  min-height:30px!important;
+}
+.topbarCompact{
+  background:rgba(255,255,255,.80)!important;
+  backdrop-filter:blur(14px)!important;
+  border:1px solid rgba(255,255,255,.86)!important;
+  border-radius:0 0 22px 22px!important;
+  box-shadow:0 14px 32px rgba(31,25,78,.08)!important;
+  position:sticky!important;
+  z-index:6!important;
+}
+.planTitle{color:#221455!important;font-weight:950!important;letter-spacing:-.03em!important}
+.topIdentity p{color:#706a8f!important;font-weight:650!important}
+.topActionsCompact{gap:8px!important}
+.topActionsCompact .searchCompact{
+  width:260px!important;
+  background:#fff!important;
+  border:2px solid #e8e3ff!important;
+  border-radius:999px!important;
+  padding-left:16px!important;
+}
+.topActionsCompact .searchCompact:focus{width:320px!important;background:#fff!important}
+.topMiniBtn{background:#f4f0ff!important;color:#4c1d95!important;border-color:#ddd6fe!important;border-radius:999px!important}
+.dangerMiniBtn{background:#fff1f2!important;color:#9f1239!important;border-color:#fecdd3!important}
+#addTaskTopBtn{border-radius:999px!important;padding-inline:18px!important;box-shadow:0 12px 24px rgba(124,58,237,.20)!important}
+#addBucketBtn,#filterStatus{border-radius:999px!important}
+
+/* Kanban : lecture et glisser-déposer plus faciles */
+.board{padding:18px!important;gap:18px!important;scroll-padding:18px!important}
+.bucket{border-radius:22px!important;background:rgba(255,255,255,.64)!important;border:1px solid var(--v50-border)!important;box-shadow:var(--v50-shadow)!important;overflow:hidden!important}
+.bucketHead{position:sticky!important;top:0!important;z-index:3!important;background:linear-gradient(180deg,#fff,#f8f6ff)!important}
+.colDragHandle{width:30px!important;height:30px!important;border-radius:999px!important;background:#ede9fe!important;color:#5b21b6!important}
+.bucketHead input{font-size:16px!important}.count{min-width:30px!important;text-align:center!important}
+.addCard{position:sticky!important;top:54px!important;z-index:2!important;border:1px dashed #c4b5fd!important;background:#fff!important;color:#5b21b6!important;font-weight:900!important}
+.card{padding:14px!important;border-radius:20px!important;cursor:pointer!important}.card h3{padding-right:24px!important}.card:before{content:'Ouvrir';position:absolute;right:12px;bottom:10px;font-size:10px;font-weight:900;color:#6d28d9;opacity:0;transition:opacity .15s ease}.card:hover:before{opacity:.72}
+.meta{gap:7px!important}.pill{padding:5px 9px!important}
+
+/* Liste : plus compacte, plus tableau de bord */
+.listQuickFilters{position:sticky!important;top:104px!important;z-index:4!important;border-radius:999px!important;background:rgba(255,255,255,.88)!important;backdrop-filter:blur(12px)!important;padding:8px 14px!important}.listCount{font-weight:900!important;color:#4c1d95!important}
+.listTable{font-size:14px!important}.listTable td{vertical-align:middle!important}.listTable tr.taskrow:hover{transform:translateY(-1px);box-shadow:var(--v50-shadow-hover)!important}
+
+/* Calendrier : commandes plus distinctes */
+.calendarToolbarRow{display:grid!important;grid-template-columns:1fr auto 1fr!important;gap:12px!important;align-items:center!important;padding:10px!important;border-radius:24px!important}
+.calendarToolbarLeft{justify-self:start!important}.calendarToolbarCenter{justify-self:center!important}.calendarToolbarRight{justify-self:end!important}.calendarPeriodRow{border-radius:24px!important;padding:10px 14px!important}.calNavBtn{width:44px!important;height:38px!important;border-radius:999px!important}.calTodayModern{border-radius:999px!important;font-weight:900!important}.calendarHeaderModern{display:grid!important;gap:10px!important}.calCell:hover{box-shadow:var(--v50-shadow-hover)!important;transform:translateY(-1px)}.calAppt.blink,.appointmentItem.blink{animation:appointmentBlink 1s infinite!important}
+
+/* Dialogues : actions toujours visibles, sections plus faciles à lire */
+dialog{width:min(860px,94vw)!important;max-height:92vh!important;overflow:auto!important;padding:22px!important;background:linear-gradient(180deg,#fff,#fbfaff)!important}
+dialog form{gap:14px!important}dialog label{color:#34245f!important;font-size:13px!important}dialog input,dialog select,dialog textarea{border-radius:14px!important;border-color:#ded8ff!important;background:#fff!important}dialog menu{position:sticky!important;bottom:-22px!important;background:linear-gradient(180deg,rgba(251,250,255,.70),#fff 45%)!important;border-top:1px solid #ede9fe!important;padding-top:12px!important;z-index:5!important}dialog menu button{border-radius:999px!important;min-width:112px!important}.grid2{gap:14px!important}.taskDocumentPanel,.companyDocumentPanel{padding:14px!important;border-radius:20px!important;background:#f8f6ff!important;border:1px solid #e7e1ff!important}.taskDocumentPanel h3,.companyDocumentPanel h3{margin:0 0 8px!important;color:#25185c!important}
+.companyTabs{background:#f4f0ff!important;border:1px solid #e3dcff!important;border-radius:999px!important;padding:4px!important;display:flex!important;gap:4px!important}.companyTab{border-radius:999px!important;flex:1!important}.companyTab.active{background:linear-gradient(135deg,#7c3aed,#5b5ff7)!important;color:white!important}
+
+/* Pages groupées / Entreprises */
+.groupHeader{background:rgba(255,255,255,.72)!important;border:1px solid #e7e1ff!important;border-radius:20px!important;padding:14px 16px!important;box-shadow:var(--v50-shadow)!important}.groupGrid{gap:16px!important}.openGroupBtn,.backBtn{border-radius:999px!important}.inlineCompanyInfoBtn{border-radius:999px!important;min-width:24px!important;height:24px!important;padding:0!important;margin-left:4px!important;background:#ede9fe!important;color:#4c1d95!important;border:0!important}
+
+/* Aide visuelle sur mobile et petits écrans */
+@media(max-width:1150px){.topActionsCompact .searchCompact:focus{width:100%!important}.calendarToolbarRow{grid-template-columns:1fr!important}.calendarToolbarLeft,.calendarToolbarCenter,.calendarToolbarRight{justify-self:stretch!important}.calendarToolbarCenter,.calendarViewSwitch{justify-content:center!important}.listQuickFilters{top:0!important;flex-wrap:wrap!important;border-radius:18px!important}}
+@media(max-width:850px){.sidebar{position:relative!important;height:auto!important}.topbarCompact{border-radius:0!important}.view{padding:12px!important}.board{padding:12px!important}.bucket{min-width:300px!important}.grid2{grid-template-columns:1fr!important}dialog{padding:16px!important}.companyTabs{border-radius:18px!important;flex-direction:column!important}.listQuickFilters{align-items:flex-start!important}.listQuickFilters .listCount{margin-left:0!important}}

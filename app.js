@@ -1269,7 +1269,7 @@ if($('companyInfoForm')){
 
 // ---------------- GOOGLE DRIVE SYNC ----------------
 
-const VERSION_LABEL = 'V49.0';
+const VERSION_LABEL = 'V50';
 let driveConnectedForBanner = false;
 let lastSaveTimeForBanner = localStorage.getItem('mon-organiseur-last-save-time') || '--';
 let lastLocalSaveTimeForBanner = localStorage.getItem('mon-organiseur-last-local-save-time') || '--';
@@ -1602,3 +1602,30 @@ window.addEventListener('beforeunload', ()=>{
 
 async function startApp(){ initDriveUi(); render(); await finishOAuthRedirectIfNeeded(); }
 if(document.readyState==='loading'){ document.addEventListener('DOMContentLoaded', startApp); } else { startApp(); }
+
+
+// ---------------- V50 ERGONOMIE ----------------
+// Raccourcis clavier simples, sans changer les données ni la connexion Drive.
+(function(){
+  function hasOpenDialog(){ return !!document.querySelector('dialog[open]'); }
+  document.addEventListener('keydown', function(e){
+    const active = document.activeElement;
+    const typing = active && ['INPUT','TEXTAREA','SELECT'].includes(active.tagName);
+    if((e.ctrlKey || e.metaKey) && e.key.toLowerCase()==='k'){
+      e.preventDefault();
+      const search = document.getElementById('searchInput');
+      if(search){ search.focus(); search.select(); }
+      return;
+    }
+    if((e.ctrlKey || e.metaKey) && e.key.toLowerCase()==='n'){
+      e.preventDefault();
+      if(!hasOpenDialog() && typeof openTask==='function'){
+        try{ openTask(null, plan().buckets[0].id); }catch(err){ console.warn(err); }
+      }
+      return;
+    }
+    if(e.key==='Escape' && !typing){
+      document.querySelectorAll('dialog[open]').forEach(d=>{ try{ d.close(); }catch(_){} });
+    }
+  });
+})();
