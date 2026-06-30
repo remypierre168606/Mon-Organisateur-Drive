@@ -17,7 +17,7 @@ Non inclus volontairement :
 Installation : remplacer les fichiers du dépôt GitHub par ceux de ce ZIP puis attendre le déploiement Netlify.
 
 
-V50 - ERGONOMIE
+V50.1 - ERGONOMIE
 - Interface plus lisible et plus confortable.
 - Barre supérieure et menu latéral améliorés.
 - Cartes, listes, calendrier et fenêtres mieux organisés.

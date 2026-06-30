@@ -799,3 +799,9 @@ dialog form{gap:14px!important}dialog label{color:#34245f!important;font-size:13
 /* Aide visuelle sur mobile et petits écrans */
 @media(max-width:1150px){.topActionsCompact .searchCompact:focus{width:100%!important}.calendarToolbarRow{grid-template-columns:1fr!important}.calendarToolbarLeft,.calendarToolbarCenter,.calendarToolbarRight{justify-self:stretch!important}.calendarToolbarCenter,.calendarViewSwitch{justify-content:center!important}.listQuickFilters{top:0!important;flex-wrap:wrap!important;border-radius:18px!important}}
 @media(max-width:850px){.sidebar{position:relative!important;height:auto!important}.topbarCompact{border-radius:0!important}.view{padding:12px!important}.board{padding:12px!important}.bucket{min-width:300px!important}.grid2{grid-template-columns:1fr!important}dialog{padding:16px!important}.companyTabs{border-radius:18px!important;flex-direction:column!important}.listQuickFilters{align-items:flex-start!important}.listQuickFilters .listCount{margin-left:0!important}}
+
+/* V50.1 - opérations sécurisées */
+#stableOperationOverlay{position:fixed;inset:0;background:rgba(15,23,42,.18);backdrop-filter:blur(2px);display:none;align-items:center;justify-content:center;z-index:99999}
+#stableOperationOverlay.visible{display:flex}
+.stableOperationBox{background:#fff;border:1px solid #e5e7eb;border-radius:18px;box-shadow:0 24px 70px rgba(15,23,42,.25);padding:20px 28px;display:grid;gap:8px;text-align:center;color:#111827;min-width:260px}
+.stableOperationBox strong{font-size:18px}.stableOperationBox span{color:#64748b;font-size:13px}

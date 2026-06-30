@@ -726,6 +726,77 @@ function findTaskGlobal(id){
   }
   return {};
 }
+
+// ---------------- V50.1 STABILITÉ : opérations sécurisées ----------------
+function cloneDbState(){ return JSON.stringify(db); }
+function restoreDbState(snapshot){ try{ db=JSON.parse(snapshot); localStorage.setItem(KEY, snapshot); }catch(e){ console.error('Restauration impossible', e); } }
+function activeTaskCountIn(data=db){
+  return (data.plans||[]).reduce((sum,p)=>sum+(p.buckets||[]).reduce((s,b)=>s+(b.tasks||[]).length,0),0);
+}
+function storedTaskCountIn(data=db){ return (data.archivedTasks||[]).length + (data.trashTasks||[]).length; }
+function totalTaskCountIn(data=db){ return activeTaskCountIn(data)+storedTaskCountIn(data); }
+function logStable(msg, detail=''){
+  const line=new Date().toLocaleTimeString()+'  '+msg+(detail?'  '+detail:'');
+  window.__organiseurStableLog = window.__organiseurStableLog || [];
+  window.__organiseurStableLog.push(line);
+  if(window.__organiseurStableLog.length>120) window.__organiseurStableLog.shift();
+  console.info('[V50.1]', line);
+}
+function showStableOverlay(text='Traitement...'){
+  let el=document.getElementById('stableOperationOverlay');
+  if(!el){
+    el=document.createElement('div');
+    el.id='stableOperationOverlay';
+    el.innerHTML='<div class="stableOperationBox"><strong></strong><span>Veuillez patienter...</span></div>';
+    document.body.appendChild(el);
+  }
+  el.querySelector('strong').textContent=text;
+  el.classList.add('visible');
+}
+function hideStableOverlay(){ const el=document.getElementById('stableOperationOverlay'); if(el) el.classList.remove('visible'); }
+function saveAndFullRefresh(reason=''){
+  ensurePlanData();
+  save();
+  try{ render(); }catch(e){ console.error('Rendu principal échoué, deuxième tentative', e); setTimeout(()=>{ try{ render(); }catch(err){ console.error(err); } },50); }
+  logStable('Rafraîchissement complet', reason+' | tâches actives '+activeTaskCountIn(db));
+}
+async function runSafeOperation(label, operation, expectedTotal=null){
+  const snapshot=cloneDbState();
+  const before=totalTaskCountIn(db);
+  showStableOverlay(label+'...');
+  logStable('Début opération', label+' | total '+before);
+  try{
+    const result=await operation();
+    ensurePlanData();
+    const after=totalTaskCountIn(db);
+    const expected = expectedTotal===null ? before : expectedTotal;
+    if(after!==expected){
+      throw new Error('Contrôle sécurité : nombre de tâches incohérent ('+before+' → '+after+', attendu '+expected+').');
+    }
+    saveAndFullRefresh(label);
+    logStable('Opération OK', label+' | total '+after);
+    return result;
+  }catch(err){
+    console.error(err);
+    restoreDbState(snapshot);
+    saveAndFullRefresh('restauration après erreur');
+    alert('Opération annulée : '+explainError(err)+'\n\nLes données ont été restaurées automatiquement.');
+    logStable('Opération annulée', label+' | '+explainError(err));
+    throw err;
+  }finally{
+    hideStableOverlay();
+  }
+}
+function findTaskGlobalIn(data,id){
+  for(let pi=0; pi<(data.plans||[]).length; pi++){
+    const p=data.plans[pi];
+    for(const b of (p.buckets||[])){
+      const t=(b.tasks||[]).find(x=>x.id===id);
+      if(t) return {t,b,plan:p,planIndex:pi};
+    }
+  }
+  return {};
+}
 function openTask(id,bid){
   const found=id?findTaskGlobal(id):{};
   const t=found.t, b=found.b;
@@ -794,34 +865,50 @@ document.addEventListener('click', (e)=>{
 
 $('taskForm').onsubmit=async e=>{
   e.preventDefault();
+  const id=$('taskId').value||uid();
+  const existedBefore=!!findTaskGlobal(id).t;
+  const expectedTotal=totalTaskCountIn(db)+(existedBefore?0:1);
   try{
-    const id=$('taskId').value||uid();
-    const found=findTaskGlobal(id);
-    const old=found.t;
-    const targetPlanIndex=$('taskPlan')?Number($('taskPlan').value):db.activePlan;
-    const targetPlan=db.plans[targetPlanIndex]||plan();
-    const startDate=$('taskStartDate')?$('taskStartDate').value:'';
-    const endDate=$('taskEndDate')?$('taskEndDate').value:'';
-    // V40.12 : la date de fin remplace l'échéance.
-    const dueDate=endDate;
-    let t={id,title:$('taskTitle').value.trim(),notes:$('taskNotes').value.trim(),assignee:$('taskAssignee').value.trim(),company:$('taskCompany').value.trim(),dueDate,startDate,endDate,priority:$('taskPriority').value,progress:$('taskProgress').value,linkName:$('taskLinkName').value.trim(),linkUrl:$('taskLinkUrl').value.trim(),document:old?.document||null};
-    if($('taskDocumentFile')?.files?.[0]) t=await uploadTaskDocumentOnly(t);
-    db.plans.forEach(p=>(p.buckets||[]).forEach(b=>b.tasks=b.tasks.filter(x=>x.id!==id)));
-    const targetBucket=(targetPlan.buckets||[]).find(b=>b.id===$('taskBucket').value)||targetPlan.buckets[0];
-    if(t.progress==='done'){
-      archiveTaskRecord(t,{planTitle:targetPlan.title,bucketTitle:targetBucket?.title,planIndex:targetPlanIndex});
-    }else{
-      if(old){targetBucket.tasks.push(t)}else{targetBucket.tasks.unshift(t)}
-      db.activePlan=targetPlanIndex;
-    }
-    $('taskDialog').close();
-    render();
+    await runSafeOperation(existedBefore?'Enregistrement sécurisé':'Création sécurisée', async ()=>{
+      const found=findTaskGlobal(id);
+      const old=found.t;
+      const targetPlanIndex=$('taskPlan')?Number($('taskPlan').value):db.activePlan;
+      if(!Number.isInteger(targetPlanIndex) || !db.plans[targetPlanIndex]) throw new Error('Plan cible introuvable.');
+      const targetPlan=db.plans[targetPlanIndex];
+      const targetBucket=(targetPlan.buckets||[]).find(b=>b.id===$('taskBucket').value)||targetPlan.buckets?.[0];
+      if(!targetBucket) throw new Error('Colonne cible introuvable.');
+      const startDate=$('taskStartDate')?$('taskStartDate').value:'';
+      const endDate=$('taskEndDate')?$('taskEndDate').value:'';
+      const dueDate=endDate;
+      let t={
+        id,
+        title:$('taskTitle').value.trim(),
+        notes:$('taskNotes').value.trim(),
+        assignee:$('taskAssignee').value.trim(),
+        company:$('taskCompany').value.trim(),
+        dueDate,startDate,endDate,
+        priority:$('taskPriority').value,
+        progress:$('taskProgress').value,
+        linkName:$('taskLinkName').value.trim(),
+        linkUrl:$('taskLinkUrl').value.trim(),
+        document:old?.document||null
+      };
+      if(!t.title) throw new Error('Le titre de la tâche est obligatoire.');
+      if($('taskDocumentFile')?.files?.[0]) t=await uploadTaskDocumentOnly(t);
+      db.plans.forEach(p=>(p.buckets||[]).forEach(b=>{ b.tasks=(b.tasks||[]).filter(x=>x.id!==id); }));
+      if(t.progress==='done'){
+        archiveTaskRecord(t,{planTitle:targetPlan.title,bucketTitle:targetBucket.title,planIndex:targetPlanIndex});
+      }else{
+        if(old) targetBucket.tasks.push(t); else targetBucket.tasks.unshift(t);
+        db.activePlan=targetPlanIndex;
+      }
+      $('taskDialog').close();
+    }, expectedTotal);
   }catch(err){
-    console.error(err);
-    if(String(err.message||err)!=='Envoi du document annulé') alert('Impossible d’enregistrer la tâche : '+explainError(err));
+    if(String(err.message||err)!=='Envoi du document annulé') console.warn('Enregistrement tâche annulé', err);
   }
 };
-$('deleteTaskBtn').onclick=()=>{const id=$('taskId').value;if(confirm('Envoyer cette tâche dans la corbeille ?')){moveTaskToTrash(id);$('taskDialog').close();render()}};
+$('deleteTaskBtn').onclick=async ()=>{const id=$('taskId').value;if(confirm('Envoyer cette tâche dans la corbeille ?')){try{await runSafeOperation('Mise en corbeille sécurisée', async()=>{moveTaskToTrash(id);$('taskDialog').close();}, totalTaskCountIn(db));}catch(e){console.warn(e);}}};
 $('cancelDialog').onclick=()=>$('taskDialog').close();
 $('cancelDeletePlanBtn').onclick=()=>$('deletePlanDialog').close();
 $('confirmDeletePlanCheck').onchange=e=>{$('confirmDeletePlanBtn').disabled=!e.target.checked};
@@ -1269,7 +1356,7 @@ if($('companyInfoForm')){
 
 // ---------------- GOOGLE DRIVE SYNC ----------------
 
-const VERSION_LABEL = 'V50';
+const VERSION_LABEL = 'V50.1';
 let driveConnectedForBanner = false;
 let lastSaveTimeForBanner = localStorage.getItem('mon-organiseur-last-save-time') || '--';
 let lastLocalSaveTimeForBanner = localStorage.getItem('mon-organiseur-last-local-save-time') || '--';
