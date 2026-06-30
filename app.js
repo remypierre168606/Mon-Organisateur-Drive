@@ -397,7 +397,7 @@ function attachCalendarTaskDnD(){
   document.querySelectorAll('.calTask').forEach(el=>{
     el.draggable=true;
     el.ondragstart=e=>{calendarTaskDrag=el.dataset.id; drag=null; dragColumn=null; e.dataTransfer.effectAllowed='move';};
-    el.onclick=()=>openTask(el.dataset.id);
+    el.onclick=()=>{ const found=findTaskGlobal(el.dataset.id); if(found.t && typeof found.planIndex==='number') db.activePlan=found.planIndex; render(); openTask(el.dataset.id); };
   });
   document.querySelectorAll('[data-cal-drop-date]').forEach(zone=>{
     zone.ondragover=e=>{if(calendarTaskDrag){e.preventDefault();zone.classList.add('calendarDropOver')}};
@@ -410,7 +410,7 @@ function renderCalendar(){
   const root=$('calendarView');
   if(!calendarMode) calendarMode='month';
   const tasksByDate={};
-  allTasks().filter(pass).forEach(t=>{
+  allPlanTasks().filter(pass).forEach(t=>{
     calendarDatesForTask(t).forEach(d=>{ (tasksByDate[d] ||= []).push(t); });
   });
   const apptsByDate=appointmentsByDate();
@@ -1280,7 +1280,7 @@ if($('companyInfoForm')){
 
 // ---------------- GOOGLE DRIVE SYNC ----------------
 
-const VERSION_LABEL = 'V46';
+const VERSION_LABEL = 'V47';
 let driveConnectedForBanner = false;
 let lastSaveTimeForBanner = localStorage.getItem('mon-organiseur-last-save-time') || '--';
 let lastLocalSaveTimeForBanner = localStorage.getItem('mon-organiseur-last-local-save-time') || '--';
