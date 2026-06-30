@@ -417,7 +417,20 @@ function renderCalendar(){
   const apptHtml=(date)=> (apptsByDate[date]||[]).map(a=>`<div class="calAppt ${appointmentShouldBlink(a)?'blink':''}" data-appt="${a.id}" title="${esc(a.company||'RDV')}">${appointmentLabel(a)}</div>`).join('');
   const tasksForCalendar=(date)=> calendarRdvOnly ? [] : (tasksByDate[date]||[]);
   const rdvOnlyHtml=()=>`<label class="calendarRdvOnly"><input id="calendarRdvOnlyCheck" type="checkbox" ${calendarRdvOnly?'checked':''}> RDV uniquement</label>`;
-  const switchHtml=(mode)=>`<div class="calendarSwitch"><button id="calMonthBtn" class="${mode==='month'?'activeSwitch':''}">Mois</button><button id="calWeekBtn" class="${mode==='week'?'activeSwitch':''}">Semaine</button><button id="calDayBtn" class="${mode==='day'?'activeSwitch':''}">Jour</button></div>`;
+  const switchHtml=(mode)=>`<div class="calendarSwitch"><button id="calDayBtn" class="${mode==='day'?'activeSwitch':''}">Jour</button><button id="calWeekBtn" class="${mode==='week'?'activeSwitch':''}">Semaine</button><button id="calMonthBtn" class="${mode==='month'?'activeSwitch':''}">Mois</button></div>`;
+  const calendarToolbarHtml=(title,prevLabel,nextLabel,mode)=>`
+      <div class="calendarHeader calendarHeaderModern">
+        <div class="calendarToolbarRow">
+          <div class="calendarToolbarLeft"><button id="calTodayBtn" class="calTodayModern">Aujourd'hui</button></div>
+          <div class="calendarToolbarCenter"><button id="addAppointmentTopBtn" class="appointmentAddBtn">+ RDV</button>${rdvOnlyHtml()}</div>
+          <div class="calendarToolbarRight">${switchHtml(mode)}</div>
+        </div>
+        <div class="calendarPeriodRow">
+          <button id="calPrevBtn" class="calNavBtn" title="${esc(prevLabel)}">←</button>
+          <h2>${esc(title)}</h2>
+          <button id="calNextBtn" class="calNavBtn" title="${esc(nextLabel)}">→</button>
+        </div>
+      </div>`;
 
   if(calendarMode==='day'){
     const key=dateKey(calendarCursor);
@@ -425,15 +438,7 @@ function renderCalendar(){
     const tasks=tasksForCalendar(key);
     const appts=apptsByDate[key]||[];
     root.innerHTML=`
-      <div class="calendarHeader">
-        <button id="calPrevBtn">← Jour précédent</button>
-        <h2>${esc(title.charAt(0).toUpperCase()+title.slice(1))}</h2>
-        <button id="calNextBtn">Jour suivant →</button>
-        <button id="calTodayBtn">Aujourd'hui</button>
-        <button id="addAppointmentTopBtn" class="appointmentAddBtn">+ RDV</button>
-        ${rdvOnlyHtml()}
-        ${switchHtml('day')}
-      </div>
+${calendarToolbarHtml(title.charAt(0).toUpperCase()+title.slice(1),'Jour précédent','Jour suivant','day')}
       <div class="calendarDayView" data-cal-drop-date="${key}">
         <section class="dayPanel">
           <h3>🟣 RDV</h3>
@@ -470,15 +475,7 @@ function renderCalendar(){
       </div>`);
     }
     root.innerHTML=`
-      <div class="calendarHeader">
-        <button id="calPrevBtn">← Semaine précédente</button>
-        <h2>${esc(title)}</h2>
-        <button id="calNextBtn">Semaine suivante →</button>
-        <button id="calTodayBtn">Aujourd'hui</button>
-        <button id="addAppointmentTopBtn" class="appointmentAddBtn">+ RDV</button>
-        ${rdvOnlyHtml()}
-        ${switchHtml('week')}
-      </div>
+${calendarToolbarHtml(title,'Semaine précédente','Semaine suivante','week')}
       <div class="calendarWeek">${days.join('')}</div>`;
     $('calPrevBtn').onclick=()=>{calendarCursor.setDate(calendarCursor.getDate()-7);renderCalendar()};
     $('calNextBtn').onclick=()=>{calendarCursor.setDate(calendarCursor.getDate()+7);renderCalendar()};
@@ -505,15 +502,7 @@ function renderCalendar(){
       </div>`);
     }
     root.innerHTML=`
-      <div class="calendarHeader">
-        <button id="calPrevBtn">← Mois précédent</button>
-        <h2>${esc(monthName.charAt(0).toUpperCase()+monthName.slice(1))}</h2>
-        <button id="calNextBtn">Mois suivant →</button>
-        <button id="calTodayBtn">Aujourd'hui</button>
-        <button id="addAppointmentTopBtn" class="appointmentAddBtn">+ RDV</button>
-        ${rdvOnlyHtml()}
-        ${switchHtml('month')}
-      </div>
+${calendarToolbarHtml(monthName.charAt(0).toUpperCase()+monthName.slice(1),'Mois précédent','Mois suivant','month')}
       <div class="calendarMonth">
         <div class="calWeekday">Lun</div><div class="calWeekday">Mar</div><div class="calWeekday">Mer</div><div class="calWeekday">Jeu</div><div class="calWeekday">Ven</div><div class="calWeekday">Sam</div><div class="calWeekday">Dim</div>
         ${days.join('')}
@@ -1280,7 +1269,7 @@ if($('companyInfoForm')){
 
 // ---------------- GOOGLE DRIVE SYNC ----------------
 
-const VERSION_LABEL = 'V47';
+const VERSION_LABEL = 'V48';
 let driveConnectedForBanner = false;
 let lastSaveTimeForBanner = localStorage.getItem('mon-organiseur-last-save-time') || '--';
 let lastLocalSaveTimeForBanner = localStorage.getItem('mon-organiseur-last-local-save-time') || '--';
