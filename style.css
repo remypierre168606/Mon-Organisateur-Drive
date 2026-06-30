@@ -489,3 +489,208 @@
   .calendarToolbarCenter{min-width:0;width:100%;flex-wrap:wrap;border-radius:16px}
   .calendarPeriodRow h2{min-width:0!important;font-size:18px}
 }
+
+
+/* =========================================================
+   V49.0 - Refonte graphique globale sans changement métier
+   ========================================================= */
+:root{
+  --bg:#f6f4ff;
+  --panel:#ffffff;
+  --surface:#ffffff;
+  --line:#e7e5f8;
+  --border:#e7e5f8;
+  --text:#17132f;
+  --muted:#6b6684;
+  --blue:#6d5dfc;
+  --violet:#7c3aed;
+  --violet2:#a78bfa;
+  --soft:#f2efff;
+  --danger:#dc2626;
+  --shadow:0 14px 36px rgba(31,25,78,.10);
+  --shadow2:0 8px 18px rgba(31,25,78,.08);
+}
+html{scroll-behavior:smooth}
+body{
+  background:
+    radial-gradient(circle at 20% 0%, rgba(167,139,250,.22), transparent 30%),
+    radial-gradient(circle at 90% 10%, rgba(109,93,252,.14), transparent 28%),
+    linear-gradient(135deg,#f8f7ff 0%,#f3f6ff 45%,#f8fafc 100%)!important;
+  color:var(--text)!important;
+  font-family:Inter,Segoe UI,Roboto,Arial,sans-serif!important;
+}
+.sidebar{
+  width:268px!important;
+  background:linear-gradient(180deg,#15112b 0%,#20164f 48%,#120f24 100%)!important;
+  color:#fff!important;
+  padding:18px 14px!important;
+  box-shadow:12px 0 32px rgba(17,12,45,.22);
+  border-right:1px solid rgba(255,255,255,.08);
+}
+.brand{
+  background:rgba(255,255,255,.08);
+  border:1px solid rgba(255,255,255,.12);
+  border-radius:18px;
+  padding:12px;
+  margin-bottom:16px!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.08);
+}
+.logo{
+  background:linear-gradient(135deg,#8b5cf6,#5b5ff7)!important;
+  color:white!important;
+  box-shadow:0 10px 22px rgba(124,58,237,.35);
+  border-radius:14px!important;
+}
+.brand strong{letter-spacing:.2px}.brand span{color:#d8d2ff!important}
+.nav,.ghost,.fileBtn{
+  border-radius:13px!important;
+  padding:10px 12px!important;
+  color:#ede9fe!important;
+  transition:background .18s ease, transform .18s ease, color .18s ease, box-shadow .18s ease;
+}
+.nav:hover,.ghost:hover,.nav.active{
+  background:rgba(255,255,255,.13)!important;
+  transform:translateX(3px);
+  box-shadow:0 8px 18px rgba(0,0,0,.12);
+}
+.nav.active{color:#fff!important;border-left:4px solid #c4b5fd!important}
+.sidebar hr{border:0;border-top:1px solid rgba(255,255,255,.12);width:100%;margin:8px 0}
+.app{background:transparent!important}
+.versionBanner{
+  background:rgba(255,255,255,.78)!important;
+  backdrop-filter:blur(12px);
+  border-bottom:1px solid rgba(231,229,248,.9)!important;
+  color:#2e2366!important;
+  font-weight:900!important;
+  box-shadow:0 8px 24px rgba(31,25,78,.06);
+}
+.topbarCompact,.topbar{
+  background:rgba(255,255,255,.88)!important;
+  backdrop-filter:blur(14px);
+  border:1px solid rgba(231,229,248,.9)!important;
+  border-left:0!important;
+  border-right:0!important;
+  box-shadow:0 12px 30px rgba(31,25,78,.08)!important;
+}
+.planTitle{
+  color:#20164f!important;
+  font-weight:900!important;
+  letter-spacing:-.4px;
+}
+.topIdentity p{color:#746f91!important}
+input,select,textarea{
+  border:1px solid #ddd8fb!important;
+  border-radius:12px!important;
+  background:#fff!important;
+  color:#17132f!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.8);
+  transition:border-color .15s ease, box-shadow .15s ease;
+}
+input:focus,select:focus,textarea:focus{
+  outline:0!important;
+  border-color:#a78bfa!important;
+  box-shadow:0 0 0 4px rgba(167,139,250,.20)!important;
+}
+button,.primary,.topMiniBtn,.openGroupBtn,.backBtn,.calNavBtn{
+  border-radius:12px!important;
+  border:1px solid #ded8fb!important;
+  box-shadow:0 6px 14px rgba(31,25,78,.07);
+  transition:transform .15s ease, box-shadow .15s ease, background .15s ease;
+}
+button:hover,.primary:hover,.topMiniBtn:hover,.openGroupBtn:hover,.backBtn:hover,.calNavBtn:hover{
+  transform:translateY(-1px);
+  box-shadow:0 10px 20px rgba(31,25,78,.12);
+}
+.primary,#addTaskTopBtn,.syncbar .primary{
+  background:linear-gradient(135deg,#7c3aed,#5b5ff7)!important;
+  border-color:#7c3aed!important;
+  color:white!important;
+}
+.topMiniBtn{background:#f2efff!important;color:#3b2a82!important;border-color:#ddd6fe!important}
+.dangerMiniBtn{background:#fff1f2!important;color:#9f1239!important;border-color:#fecdd3!important}
+.view{padding:22px!important}
+.bucket{
+  background:rgba(255,255,255,.66)!important;
+  border:1px solid #e7e5ff!important;
+  border-radius:20px!important;
+  box-shadow:var(--shadow2)!important;
+  overflow:hidden;
+}
+.bucketHead{
+  background:linear-gradient(180deg,#fff,#f8f7ff)!important;
+  border-bottom:1px solid #ece9ff;
+  padding:12px!important;
+}
+.bucketHead input{color:#25185c!important;font-weight:900!important}
+.count{background:#ede9fe!important;color:#5b21b6!important;font-weight:900!important}
+.addCard{border-radius:14px!important;background:#fff!important;color:#5b21b6!important;border-color:#ddd6fe!important}
+.card{
+  border-radius:18px!important;
+  border:1px solid rgba(255,255,255,.92)!important;
+  box-shadow:0 14px 28px rgba(31,25,78,.11)!important;
+  margin:12px 0!important;
+  transition:transform .16s ease, box-shadow .16s ease, filter .16s ease;
+}
+.card:hover{transform:translateY(-2px);box-shadow:0 18px 36px rgba(31,25,78,.16)!important;filter:saturate(1.04)}
+.card h3{font-size:15.5px!important;color:#17132f!important;line-height:1.25}
+.card.priority-urgent{background:linear-gradient(135deg,#ffe0e0,#ffc7c7)!important;border-left:7px solid #dc2626!important}
+.card.priority-high{background:linear-gradient(135deg,#fff8be,#ffe98a)!important;border-left:7px solid #d97706!important}
+.card.priority-normal{background:linear-gradient(135deg,#e3fae8,#c9f2d1)!important;border-left:7px solid #16a34a!important}
+.card.priority-low{background:linear-gradient(135deg,#e6f1ff,#cfe4ff)!important;border-left:7px solid #3b82f6!important}
+.pill{
+  background:rgba(255,255,255,.78)!important;
+  border:1px solid rgba(255,255,255,.72);
+  color:#37246f!important;
+  font-weight:800;
+}
+.listQuickFilters,.settingsCard,.settingsHelp,.setupBox,.groupBox,.stat,.dayPanel,.driveStatusPanel,.taskDocumentPanel,.enterpriseFormBox{
+  background:rgba(255,255,255,.86)!important;
+  border:1px solid #e7e5ff!important;
+  border-radius:20px!important;
+  box-shadow:var(--shadow)!important;
+}
+.listTable{border-spacing:0 10px!important}
+.listTable th{color:#706a8f!important;font-weight:900!important;text-transform:uppercase;font-size:11px!important;letter-spacing:.06em}
+.listTable tr.taskrow{
+  box-shadow:0 10px 24px rgba(31,25,78,.08)!important;
+  border-radius:16px!important;
+  overflow:hidden;
+}
+.listTable tr.taskrow td:first-child{border-radius:16px 0 0 16px!important}
+.listTable tr.taskrow td:last-child{border-radius:0 16px 16px 0!important}
+.groupBox{padding:16px!important}.groupBox h3{color:#25185c!important}.groupTask{border-radius:16px!important;background:#fff!important;box-shadow:0 10px 22px rgba(31,25,78,.08)!important;border-color:#ebe7ff!important}
+.calendarToolbarRow,.calendarPeriodRow{
+  background:rgba(255,255,255,.78)!important;
+  border:1px solid #e7e5ff!important;
+  box-shadow:var(--shadow2)!important;
+  backdrop-filter:blur(12px);
+}
+.calendarToolbarCenter{background:#f4f0ff!important;border-color:#ddd6fe!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.8)}
+.calendarToolbarCenter button{background:#7c3aed!important;color:white!important;border-color:#7c3aed!important}
+.rdvOnlyLabel{background:#fff!important;border-color:#ddd6fe!important;color:#4c1d95!important}
+.calendarViewSwitch{background:#f3f0ff!important;border-radius:999px!important;padding:4px!important;border:1px solid #e2ddff!important}
+.calendarViewSwitch button{border-radius:999px!important;border:0!important;background:transparent!important;box-shadow:none!important;color:#4c3c8a!important}
+.calendarViewSwitch .activeSwitch{background:linear-gradient(135deg,#7c3aed,#5b5ff7)!important;color:#fff!important;box-shadow:0 8px 16px rgba(124,58,237,.24)!important}
+.calendarPeriodRow h2{color:#25185c!important;text-shadow:0 1px 0 rgba(255,255,255,.8)}
+.calendarMonth,.calendarWeek{gap:12px!important}
+.calWeekday{background:#fff!important;border-color:#ebe7ff!important;color:#6b6684!important;border-radius:14px!important}
+.calCell{
+  background:rgba(255,255,255,.86)!important;
+  border-color:#e7e5ff!important;
+  border-radius:20px!important;
+  box-shadow:0 14px 28px rgba(31,25,78,.08)!important;
+}
+.calCell.todayCell{outline:3px solid #a78bfa!important;background:linear-gradient(180deg,#fff,#fbf7ff)!important}
+.calDate strong{color:#25185c!important}.calTask{border-radius:12px!important;font-weight:800!important}.calAppt{border-radius:12px!important;background:#ede9fe!important;color:#4c1d95!important}
+.appointmentDot{box-shadow:0 0 0 3px #ede9fe,0 6px 14px rgba(124,58,237,.25)!important}
+dialog{
+  border-radius:24px!important;
+  box-shadow:0 34px 90px rgba(12,8,40,.36)!important;
+  border:1px solid rgba(255,255,255,.8)!important;
+}
+dialog::backdrop{background:rgba(17,12,45,.55)!important;backdrop-filter:blur(4px)}
+dialog h2{color:#25185c!important;margin-top:0}.taskDocumentBox{background:#f8f7ff!important;border-color:#e7e5ff!important;border-radius:16px!important}
+.enterpriseTabs button,.tabBtn{border-radius:999px!important;background:#f4f0ff!important;color:#4c1d95!important;border-color:#e2ddff!important}.enterpriseTabs button.active,.tabBtn.active{background:linear-gradient(135deg,#7c3aed,#5b5ff7)!important;color:#fff!important}
+@media(max-width:900px){
+  .sidebar{width:auto!important}.view{padding:14px!important}.topbarCompact{border-radius:0!important}.bucket{min-width:285px!important;width:285px!important}
+}
