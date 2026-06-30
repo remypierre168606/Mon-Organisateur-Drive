@@ -409,6 +409,32 @@ function attachCalendarTaskDnD(){
   });
 }
 
+function handleCalendarWheelNavigation(e){
+  if(e.ctrlKey || e.shiftKey || e.altKey) return;
+  const target=e.target;
+  if(target && target.closest && target.closest('dialog,input,textarea,select,.cards,.sidebar,.listTable')) return;
+  if(!target || !target.closest || !target.closest('#calendarView')) return;
+  e.preventDefault();
+  const now=Date.now();
+  if(window.__calendarWheelLast && now-window.__calendarWheelLast<260) return;
+  window.__calendarWheelLast=now;
+  const dir=e.deltaY>0?1:-1;
+  if(calendarMode==='day'){
+    calendarCursor.setDate(calendarCursor.getDate()+dir);
+  }else if(calendarMode==='week'){
+    calendarCursor.setDate(calendarCursor.getDate()+(dir*7));
+  }else{
+    calendarCursor.setMonth(calendarCursor.getMonth()+dir);
+  }
+  renderCalendar();
+}
+function attachCalendarWheelNavigation(){
+  const root=$('calendarView');
+  if(!root || root.__calendarWheelAttached) return;
+  root.addEventListener('wheel', handleCalendarWheelNavigation, {passive:false});
+  root.__calendarWheelAttached=true;
+}
+
 function renderCalendar(){
   const root=$('calendarView');
   if(!calendarMode) calendarMode='month';
@@ -449,7 +475,7 @@ ${calendarToolbarHtml(title.charAt(0).toUpperCase()+title.slice(1),'Jour précé
         </section>
         <section class="dayPanel">
           <h3>📋 Tâches du jour</h3>
-          <div class="calTasks dayTasks" data-cal-drop-date="${key}">${tasks.length?tasks.map(t=>`<div class="calTask priority-${t.priority||'normal'} ${isLate(t)?'lateTask':''}" data-id="${t.id}" title="${esc(t.title)}">${t.progress==='done'?'✅ ':''}${esc(t.title)}${calendarTaskDateLabel(t)}</div>`).join(''):'<p class="emptyDay">Aucune tâche ce jour.</p>'}</div>
+          <div class="calTasks dayTasks" data-cal-drop-date="${key}">${tasks.length?tasks.map(t=>`<div class="calTask priority-${t.priority||'normal'} ${isLate(t)?'lateTask':''} ${t.progress==='done'?'done':''}" data-id="${t.id}" title="${esc(t.title)}">${t.progress==='done'?'✅ ':''}${esc(t.title)}${calendarTaskDateLabel(t)}</div>`).join(''):'<p class="emptyDay">Aucune tâche ce jour.</p>'}</div>
         </section>
       </div>`;
     $('calPrevBtn').onclick=()=>{calendarCursor.setDate(calendarCursor.getDate()-1);renderCalendar()};
@@ -474,7 +500,7 @@ ${calendarToolbarHtml(title.charAt(0).toUpperCase()+title.slice(1),'Jour précé
       const dayName=d.toLocaleDateString('fr-FR',{weekday:'long'});
       days.push(`<div class="calCell weekCell ${isToday?'todayCell':''}" data-cal-drop-date="${key}">
         <div class="calDate weekDate"><div><strong>${esc(dayName.charAt(0).toUpperCase()+dayName.slice(1))}</strong><br><span>${d.toLocaleDateString('fr-FR')}</span></div><div class="calCellBtns"><button class="calAddRdv" data-date="${key}" title="Ajouter un RDV">RDV</button><button class="calAdd" data-date="${key}" title="Ajouter une tâche à cette date">+</button></div></div>
-        <div class="calTasks">${apptHtml(key)}${tasks.map(t=>`<div class="calTask priority-${t.priority||'normal'} ${isLate(t)?'lateTask':''}" data-id="${t.id}" title="${esc(t.title)}">${t.progress==='done'?'✅ ':''}${esc(t.title)}${calendarTaskDateLabel(t)}</div>`).join('') || (!apptHtml(key)?'<div class="emptyDay">Aucune tâche</div>':'')}</div>
+        <div class="calTasks">${apptHtml(key)}${tasks.map(t=>`<div class="calTask priority-${t.priority||'normal'} ${isLate(t)?'lateTask':''} ${t.progress==='done'?'done':''}" data-id="${t.id}" title="${esc(t.title)}">${t.progress==='done'?'✅ ':''}${esc(t.title)}${calendarTaskDateLabel(t)}</div>`).join('') || (!apptHtml(key)?'<div class="emptyDay">Aucune tâche</div>':'')}</div>
       </div>`);
     }
     root.innerHTML=`
@@ -501,7 +527,7 @@ ${calendarToolbarHtml(title,'Semaine précédente','Semaine suivante','week')}
       const tasks=tasksForCalendar(key);
       days.push(`<div class="calCell ${inMonth?'':'otherMonth'} ${isToday?'todayCell':''}" data-cal-drop-date="${key}">
         <div class="calDate"><strong>${d.getDate()}</strong><div class="calCellBtns"><button class="calAddRdv" data-date="${key}" title="Ajouter un RDV">RDV</button><button class="calAdd" data-date="${key}" title="Ajouter une tâche à cette date">+</button></div></div>
-        <div class="calTasks">${apptHtml(key)}${tasks.map(t=>`<div class="calTask priority-${t.priority||'normal'} ${isLate(t)?'lateTask':''}" data-id="${t.id}" title="${esc(t.title)}">${t.progress==='done'?'✅ ':''}${esc(t.title)}${calendarTaskDateLabel(t)}</div>`).join('')}</div>
+        <div class="calTasks">${apptHtml(key)}${tasks.map(t=>`<div class="calTask priority-${t.priority||'normal'} ${isLate(t)?'lateTask':''} ${t.progress==='done'?'done':''}" data-id="${t.id}" title="${esc(t.title)}">${t.progress==='done'?'✅ ':''}${esc(t.title)}${calendarTaskDateLabel(t)}</div>`).join('')}</div>
       </div>`);
     }
     root.innerHTML=`
@@ -520,6 +546,7 @@ ${calendarToolbarHtml(monthName.charAt(0).toUpperCase()+monthName.slice(1),'Mois
   $('calMonthBtn').onclick=()=>{calendarMode='month';calendarCursor.setDate(1);renderCalendar()};
   $('calWeekBtn').onclick=()=>{calendarMode='week';renderCalendar()};
   $('calDayBtn').onclick=()=>{calendarMode='day';renderCalendar()};
+  attachCalendarWheelNavigation();
   attachCalendarTaskDnD();
   document.querySelectorAll('.calAppt').forEach(el=>el.onclick=()=>openAppointmentDialog(el.dataset.appt));
   document.querySelectorAll('.editAppointmentBtn').forEach(btn=>btn.onclick=()=>openAppointmentDialog(btn.dataset.appt));
@@ -1359,7 +1386,7 @@ if($('companyInfoForm')){
 
 // ---------------- GOOGLE DRIVE SYNC ----------------
 
-const VERSION_LABEL = 'V51';
+const VERSION_LABEL = 'V51.1';
 let driveConnectedForBanner = false;
 let lastSaveTimeForBanner = localStorage.getItem('mon-organiseur-last-save-time') || '--';
 let lastLocalSaveTimeForBanner = localStorage.getItem('mon-organiseur-last-local-save-time') || '--';

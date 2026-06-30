@@ -814,3 +814,19 @@ dialog form{gap:14px!important}dialog label{color:#34245f!important;font-size:13
 .calAppt.done{background:#f3f0ff!important;color:#6b5f8f!important;border-left-color:#a78bfa!important}
 .appointmentItem.done strong{text-decoration:line-through!important}
 .appointmentItem.done .small{text-decoration:none!important;opacity:.75!important}
+
+
+/* V51.1 - calendrier lisible + navigation molette */
+.calCell.otherMonth{opacity:1!important;background:rgba(255,255,255,.86)!important;}
+.calCell.otherMonth .calDate strong,
+.calCell.otherMonth .calDate span{opacity:.48!important;}
+.calCell.otherMonth .calTask,
+.calCell.otherMonth .calAppt{opacity:1!important;filter:none!important;}
+.calTask.done{opacity:.58!important;text-decoration:line-through!important;filter:grayscale(.18)!important;}
+#calendarView{overscroll-behavior:contain;}
+.calendarMonth,.calendarWeek,.calendarDayView{transition:opacity .16s ease, transform .16s ease;}
+.calTask.priority-urgent,.calTask.priority-high,.calTask.priority-normal,.calTask.priority-low{color:inherit;}
+.calTask.priority-urgent{background:#ffb3b3!important;border-left:6px solid #cc0000!important;color:#3b0000!important;}
+.calTask.priority-high{background:#fff4a3!important;border-left:6px solid #d4aa00!important;color:#4a3b00!important;}
+.calTask.priority-normal{background:#dff7df!important;border-left:6px solid #2e8b57!important;color:#0f3d24!important;}
+.calTask.priority-low{background:#dcecff!important;border-left:6px solid #3b82f6!important;color:#102a5c!important;}
