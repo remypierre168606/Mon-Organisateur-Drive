@@ -805,3 +805,12 @@ dialog form{gap:14px!important}dialog label{color:#34245f!important;font-size:13
 #stableOperationOverlay.visible{display:flex}
 .stableOperationBox{background:#fff;border:1px solid #e5e7eb;border-radius:18px;box-shadow:0 24px 70px rgba(15,23,42,.25);padding:20px 28px;display:grid;gap:8px;text-align:center;color:#111827;min-width:260px}
 .stableOperationBox strong{font-size:18px}.stableOperationBox span{color:#64748b;font-size:13px}
+
+
+/* V51 - RDV barrés */
+.appointmentDoneLine{display:flex!important;grid-template-columns:none!important;align-items:center!important;gap:10px!important;background:#faf5ff!important;border:1px solid #ddd6fe!important;border-radius:14px!important;padding:10px 12px!important;color:#4c1d95!important;font-weight:800!important}
+.appointmentDoneLine input{width:auto!important;margin:0!important}
+.calAppt.done,.appointmentItem.done{opacity:.58!important;text-decoration:line-through!important;filter:grayscale(.18)!important}
+.calAppt.done{background:#f3f0ff!important;color:#6b5f8f!important;border-left-color:#a78bfa!important}
+.appointmentItem.done strong{text-decoration:line-through!important}
+.appointmentItem.done .small{text-decoration:none!important;opacity:.75!important}

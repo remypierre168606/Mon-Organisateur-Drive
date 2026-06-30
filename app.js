@@ -137,7 +137,7 @@ function appointmentsForCompany(company){
   });
 }
 function appointmentShouldBlink(a){
-  if(!a || a.date!==today()) return false;
+  if(!a || a.done || a.date!==today()) return false;
   const time=String(a.time||'').trim();
   // Si le RDV n'a pas d'heure, il clignote toute la journée.
   if(!time) return true;
@@ -183,7 +183,8 @@ function appointmentCompanyOptions(selected=''){
 function appointmentLabel(a){
   const time=a.time?` ${esc(a.time)}`:'';
   const title=a.title?` — ${esc(a.title)}`:'';
-  return `🟣${time} ${esc(a.company||'RDV')}${title}`;
+  const done=a.done?'☑ ':'';
+  return `🟣${done}${time} ${esc(a.company||'RDV')}${title}`;
 }
 function openAppointmentDialog(id='', date=''){
   ensurePlanData();
@@ -194,6 +195,8 @@ function openAppointmentDialog(id='', date=''){
   $('appointmentDate').value=existing?.date||date||dateKey(calendarCursor)||today();
   $('appointmentTime').value=existing?.time||'';
   $('appointmentTitle').value=existing?.title||'';
+  const doneBox=$('appointmentDone');
+  if(doneBox) doneBox.checked=!!existing?.done;
   $('appointmentNotes').value=existing?.notes||'';
   $('deleteAppointmentBtn').style.visibility=existing?'visible':'hidden';
   $('appointmentDialog').showModal();
@@ -414,7 +417,7 @@ function renderCalendar(){
     calendarDatesForTask(t).forEach(d=>{ (tasksByDate[d] ||= []).push(t); });
   });
   const apptsByDate=appointmentsByDate();
-  const apptHtml=(date)=> (apptsByDate[date]||[]).map(a=>`<div class="calAppt ${appointmentShouldBlink(a)?'blink':''}" data-appt="${a.id}" title="${esc(a.company||'RDV')}">${appointmentLabel(a)}</div>`).join('');
+  const apptHtml=(date)=> (apptsByDate[date]||[]).map(a=>`<div class="calAppt ${a.done?'done':''} ${appointmentShouldBlink(a)?'blink':''}" data-appt="${a.id}" title="${esc(a.company||'RDV')}">${appointmentLabel(a)}</div>`).join('');
   const tasksForCalendar=(date)=> calendarRdvOnly ? [] : (tasksByDate[date]||[]);
   const rdvOnlyHtml=()=>`<label class="calendarRdvOnly"><input id="calendarRdvOnlyCheck" type="checkbox" ${calendarRdvOnly?'checked':''}> RDV uniquement</label>`;
   const switchHtml=(mode)=>`<div class="calendarSwitch"><button id="calDayBtn" class="${mode==='day'?'activeSwitch':''}">Jour</button><button id="calWeekBtn" class="${mode==='week'?'activeSwitch':''}">Semaine</button><button id="calMonthBtn" class="${mode==='month'?'activeSwitch':''}">Mois</button></div>`;
@@ -442,7 +445,7 @@ ${calendarToolbarHtml(title.charAt(0).toUpperCase()+title.slice(1),'Jour précé
       <div class="calendarDayView" data-cal-drop-date="${key}">
         <section class="dayPanel">
           <h3>🟣 RDV</h3>
-          <div class="appointmentList">${appts.length?appts.map(a=>`<div class="appointmentItem ${appointmentShouldBlink(a)?'blink':''}"><div><strong>${appointmentLabel(a)}</strong>${a.notes?`<div class="small">${esc(a.notes)}</div>`:''}</div><div class="appointmentActions"><button class="editAppointmentBtn" data-appt="${a.id}">Modifier</button><button class="deleteAppointmentBtnSmall" data-appt="${a.id}">Supprimer</button></div></div>`).join(''):'<p class="emptyDay">Aucun RDV ce jour.</p>'}</div>
+          <div class="appointmentList">${appts.length?appts.map(a=>`<div class="appointmentItem ${a.done?'done':''} ${appointmentShouldBlink(a)?'blink':''}"><div><strong>${appointmentLabel(a)}</strong>${a.notes?`<div class="small">${esc(a.notes)}</div>`:''}</div><div class="appointmentActions"><button class="editAppointmentBtn" data-appt="${a.id}">Modifier</button><button class="deleteAppointmentBtnSmall" data-appt="${a.id}">Supprimer</button></div></div>`).join(''):'<p class="emptyDay">Aucun RDV ce jour.</p>'}</div>
         </section>
         <section class="dayPanel">
           <h3>📋 Tâches du jour</h3>
@@ -843,7 +846,7 @@ $('appointmentForm').onsubmit=e=>{
   e.preventDefault();
   ensurePlanData();
   const id=$('appointmentId').value||uid();
-  const a={id,company:$('appointmentCompany').value.trim(),date:$('appointmentDate').value,time:$('appointmentTime').value,title:$('appointmentTitle').value.trim(),notes:$('appointmentNotes').value.trim(),color:'violet',rdvActive:true,updatedAt:new Date().toISOString()};
+  const a={id,company:$('appointmentCompany').value.trim(),date:$('appointmentDate').value,time:$('appointmentTime').value,title:$('appointmentTitle').value.trim(),notes:$('appointmentNotes').value.trim(),done:!!($('appointmentDone')&&$('appointmentDone').checked),color:'violet',rdvActive:true,updatedAt:new Date().toISOString()};
   if(!a.company){ alert('Choisis une entreprise pour le RDV.'); return; }
   if(!a.date){ alert('Choisis une date pour le RDV.'); return; }
   db.appointments=db.appointments.filter(x=>x.id!==id);
@@ -1356,7 +1359,7 @@ if($('companyInfoForm')){
 
 // ---------------- GOOGLE DRIVE SYNC ----------------
 
-const VERSION_LABEL = 'V50.1';
+const VERSION_LABEL = 'V51';
 let driveConnectedForBanner = false;
 let lastSaveTimeForBanner = localStorage.getItem('mon-organiseur-last-save-time') || '--';
 let lastLocalSaveTimeForBanner = localStorage.getItem('mon-organiseur-last-local-save-time') || '--';

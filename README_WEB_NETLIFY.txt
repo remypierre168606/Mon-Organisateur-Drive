@@ -17,8 +17,11 @@ Non inclus volontairement :
 Installation : remplacer les fichiers du dépôt GitHub par ceux de ce ZIP puis attendre le déploiement Netlify.
 
 
-V50.1 - ERGONOMIE
+V51 - RDV BARRÉS
 - Interface plus lisible et plus confortable.
 - Barre supérieure et menu latéral améliorés.
 - Cartes, listes, calendrier et fenêtres mieux organisés.
 - Raccourcis : Ctrl+K pour rechercher, Ctrl+N pour nouvelle tâche.
+
+
+V51 : ajout d’une coche dans les RDV pour les afficher comme terminés / barrés.
