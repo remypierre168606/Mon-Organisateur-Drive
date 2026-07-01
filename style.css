@@ -830,3 +830,32 @@ dialog form{gap:14px!important}dialog label{color:#34245f!important;font-size:13
 .calTask.priority-high{background:#fff4a3!important;border-left:6px solid #d4aa00!important;color:#4a3b00!important;}
 .calTask.priority-normal{background:#dff7df!important;border-left:6px solid #2e8b57!important;color:#0f3d24!important;}
 .calTask.priority-low{background:#dcecff!important;border-left:6px solid #3b82f6!important;color:#102a5c!important;}
+
+
+/* V51.2 - poubelle visible en haut de chaque colonne */
+.bucketHead{
+  gap:8px;
+}
+.bucketDeleteBtn{
+  display:inline-flex!important;
+  align-items:center;
+  justify-content:center;
+  width:28px;
+  height:28px;
+  min-width:28px;
+  border:1px solid #fecaca!important;
+  background:#fff1f2!important;
+  color:#b91c1c!important;
+  border-radius:999px!important;
+  cursor:pointer!important;
+  font-size:14px!important;
+  line-height:1!important;
+  opacity:1!important;
+}
+.bucketDeleteBtn:hover{
+  background:#fecaca!important;
+  transform:scale(1.06);
+}
+.bucketHead input{
+  min-width:0;
+}

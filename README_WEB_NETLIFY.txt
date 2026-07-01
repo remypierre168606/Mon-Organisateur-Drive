@@ -25,3 +25,6 @@ V51 - RDV BARRÉS
 
 
 V51 : ajout d’une coche dans les RDV pour les afficher comme terminés / barrés.
+
+
+V51.2 : ajout d'une petite poubelle visible en haut de chaque colonne avec double validation de suppression.

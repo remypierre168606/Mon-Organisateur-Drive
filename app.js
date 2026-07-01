@@ -266,7 +266,7 @@ function renderBoard(){
     const sec=document.createElement('section');
     sec.className='bucket';
     sec.dataset.bucketId=b.id;
-    sec.innerHTML=`<div class="bucketHead"><button class="colDragHandle" draggable="true" title="Glisser pour déplacer la colonne">↔</button><input value="${esc(b.title)}"><span class="count">${b.tasks.length}</span><button class="bucketDeleteBtn" title="Supprimer cette colonne">🗑️</button></div><button class="addCard">+ Ajouter une tâche</button><div class="cards"></div>`;
+    sec.innerHTML=`<div class="bucketHead"><button class="colDragHandle" draggable="true" title="Glisser pour déplacer la colonne">↔</button><input value="${esc(b.title)}"><span class="count">${b.tasks.length}</span><button class="bucketDeleteBtn" type="button" title="Supprimer cette colonne avec double confirmation" aria-label="Supprimer cette colonne">🗑️</button></div><button class="addCard">+ Ajouter une tâche</button><div class="cards"></div>`;
     const handle=sec.querySelector('.colDragHandle');
     handle.ondragstart=e=>{dragColumn=b.id; drag=null; e.dataTransfer.effectAllowed='move';};
     sec.ondragover=e=>{if(dragColumn){e.preventDefault();sec.classList.add('columnDragover')}};
@@ -725,12 +725,17 @@ function deleteBucket(bid){
   if(!b) return;
   if(p.buckets.length<=1){ alert('Impossible de supprimer la dernière colonne.'); return; }
   const count=(b.tasks||[]).length;
-  if(!confirm(`Supprimer la colonne "${b.title}" ?${count?`
-
-Attention : ${count} tâche(s) seront aussi supprimée(s).`:''}`)) return;
-  if(!confirm('Deuxième confirmation : veux-tu vraiment supprimer cette colonne définitivement ?')) return;
+  const msg1=`Tu vas supprimer la colonne : "${b.title}"${count?`\n\nAttention : ${count} tâche(s) dans cette colonne seront aussi supprimée(s).`:''}\n\nContinuer ?`;
+  if(!confirm(msg1)) return;
+  const saisie=prompt(`Deuxième validation de sécurité.\n\nPour supprimer définitivement cette colonne, tape exactement :\n${b.title}`,'');
+  if((saisie||'').trim()!==String(b.title).trim()){
+    alert('Suppression annulée : le nom saisi ne correspond pas.');
+    return;
+  }
   p.buckets=p.buckets.filter(x=>x.id!==bid);
+  save();
   render();
+  alert('Colonne supprimée : '+b.title);
 }
 function openDeletePlanDialog(index){
   const p=db.plans[index];
@@ -1386,7 +1391,7 @@ if($('companyInfoForm')){
 
 // ---------------- GOOGLE DRIVE SYNC ----------------
 
-const VERSION_LABEL = 'V51.1';
+const VERSION_LABEL = 'V51.2';
 let driveConnectedForBanner = false;
 let lastSaveTimeForBanner = localStorage.getItem('mon-organiseur-last-save-time') || '--';
 let lastLocalSaveTimeForBanner = localStorage.getItem('mon-organiseur-last-local-save-time') || '--';
