@@ -1063,3 +1063,40 @@ article.card h3{
   overflow-wrap:anywhere!important;
   word-break:break-word!important;
 }
+
+
+/* V53 - alarme Drive déconnecté */
+.versionBanner{gap:8px!important}
+.driveSyncOk{color:#15803d;font-weight:950}
+.driveSyncPending{color:#c2410c;font-weight:950}
+.driveAlarmBanner{color:#7f1d1d!important}
+.driveAlarm{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  color:#dc2626;
+  font-weight:1000;
+  padding:3px 10px;
+  border-radius:999px;
+  background:rgba(254,226,226,.85);
+  box-shadow:0 0 0 0 rgba(220,38,38,.45);
+  animation:driveAlarmPulse 1.05s infinite;
+}
+.driveAlarmDot{
+  width:12px;
+  height:12px;
+  border-radius:999px;
+  background:#ef4444;
+  display:inline-block;
+  box-shadow:0 0 0 0 rgba(239,68,68,.7);
+  animation:driveAlarmDotPulse .85s infinite;
+}
+@keyframes driveAlarmPulse{
+  0%{box-shadow:0 0 0 0 rgba(220,38,38,.45)}
+  70%{box-shadow:0 0 0 12px rgba(220,38,38,0)}
+  100%{box-shadow:0 0 0 0 rgba(220,38,38,0)}
+}
+@keyframes driveAlarmDotPulse{
+  0%,100%{transform:scale(1);opacity:1}
+  50%{transform:scale(1.35);opacity:.55}
+}

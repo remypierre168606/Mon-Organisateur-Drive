@@ -1431,7 +1431,7 @@ if($('companyInfoForm')){
 
 // ---------------- GOOGLE DRIVE SYNC ----------------
 
-const VERSION_LABEL = 'V52';
+const VERSION_LABEL = 'V53';
 let driveConnectedForBanner = false;
 let lastSaveTimeForBanner = localStorage.getItem('mon-organiseur-last-save-time') || '--';
 let lastLocalSaveTimeForBanner = localStorage.getItem('mon-organiseur-last-local-save-time') || '--';
@@ -1456,8 +1456,15 @@ function hasValidDriveToken(){
 function updateVersionBanner(){
   const el=$('versionBanner');
   if(!el) return;
-  const state = driveConnectedForBanner ? (pendingDriveSync ? '🟠 Drive à synchroniser' : '🟢 Drive connecté') : '🔴 Drive déconnecté';
-  el.textContent = `${VERSION_LABEL} | ${state} | 💾 Drive ${lastSaveTimeForBanner}`;
+  const driveInfo = `💾 Drive ${lastSaveTimeForBanner}`;
+  if(driveConnectedForBanner){
+    const state = pendingDriveSync ? '<span class="driveSyncPending">🟠 Drive à synchroniser</span>' : '<span class="driveSyncOk">🟢 Drive connecté</span>';
+    el.classList.remove('driveAlarmBanner');
+    el.innerHTML = `<span>${VERSION_LABEL}</span><span>|</span>${state}<span>|</span><span>${driveInfo}</span>`;
+  }else{
+    el.classList.add('driveAlarmBanner');
+    el.innerHTML = `<span>${VERSION_LABEL}</span><span>|</span><span class="driveAlarm"><span class="driveAlarmDot"></span><span>Drive non connecté</span></span><span>|</span><span>${driveInfo}</span>`;
+  }
   updateDriveStatusPanel();
 }
 function setDriveBanner(connected){
