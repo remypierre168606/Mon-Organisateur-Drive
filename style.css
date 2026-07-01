@@ -1002,3 +1002,64 @@ dialog form{gap:14px!important}dialog label{color:#34245f!important;font-size:13
 .taskTitleCell{
   overflow-wrap:anywhere!important;
 }
+
+/* V52 - lisibilité renforcée : titres de tâches toujours visibles */
+.board .bucket .cards .card,
+.view .card,
+.card{
+  height:auto!important;
+  min-height:unset!important;
+  max-height:none!important;
+  overflow:visible!important;
+  display:block!important;
+  contain:none!important;
+}
+.board .bucket .cards .card h3,
+.card h3,
+article.card h3{
+  display:block!important;
+  width:100%!important;
+  height:auto!important;
+  min-height:0!important;
+  max-height:none!important;
+  margin:0 0 10px 0!important;
+  padding-right:30px!important;
+  white-space:normal!important;
+  overflow:visible!important;
+  text-overflow:clip!important;
+  overflow-wrap:anywhere!important;
+  word-break:break-word!important;
+  line-height:1.32!important;
+  -webkit-line-clamp:unset!important;
+  -webkit-box-orient:initial!important;
+  line-clamp:unset!important;
+}
+.board .bucket .cards .card .meta,
+.card .meta{
+  position:relative!important;
+  clear:both!important;
+  margin-top:8px!important;
+  display:flex!important;
+  flex-wrap:wrap!important;
+}
+.board .bucket .cards .card .pill,
+.card .pill{
+  max-width:100%!important;
+  white-space:normal!important;
+  overflow-wrap:anywhere!important;
+}
+.bucketHead,
+.bucketHead .bucketTitleInput{
+  min-height:auto!important;
+  height:auto!important;
+  max-height:none!important;
+  overflow:visible!important;
+}
+.bucketHead{
+  align-items:flex-start!important;
+}
+.bucketHead .bucketTitleInput{
+  white-space:normal!important;
+  overflow-wrap:anywhere!important;
+  word-break:break-word!important;
+}
