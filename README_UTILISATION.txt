@@ -25,6 +25,3 @@ V51 - RDV BARRÉS
 
 
 V51 : ajout d’une coche dans les RDV pour les afficher comme terminés / barrés.
-
-
-V52 Mobile : interface optimisée pour téléphone (menu horizontal, cartes plein écran, formulaires adaptés au tactile, calendrier plus lisible sur petit écran).
