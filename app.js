@@ -1431,7 +1431,7 @@ if($('companyInfoForm')){
 
 // ---------------- GOOGLE DRIVE SYNC ----------------
 
-const VERSION_LABEL = 'V53';
+const VERSION_LABEL = 'V54';
 let driveConnectedForBanner = false;
 let lastSaveTimeForBanner = localStorage.getItem('mon-organiseur-last-save-time') || '--';
 let lastLocalSaveTimeForBanner = localStorage.getItem('mon-organiseur-last-local-save-time') || '--';
@@ -1453,10 +1453,17 @@ function hasValidDriveToken(){
   if(tokenExpiresAt && Date.now() > (tokenExpiresAt - 60000)) return false;
   return true;
 }
+function updateDriveNavState(connected){
+  const driveNav=document.querySelector('.nav[data-view="settings"]');
+  if(!driveNav) return;
+  driveNav.classList.toggle('driveNavConnected', !!connected);
+  driveNav.classList.toggle('driveNavDisconnected', !connected);
+}
 function updateVersionBanner(){
   const el=$('versionBanner');
   if(!el) return;
   const driveInfo = `💾 Drive ${lastSaveTimeForBanner}`;
+  updateDriveNavState(driveConnectedForBanner);
   if(driveConnectedForBanner){
     const state = pendingDriveSync ? '<span class="driveSyncPending">🟠 Drive à synchroniser</span>' : '<span class="driveSyncOk">🟢 Drive connecté</span>';
     el.classList.remove('driveAlarmBanner');
