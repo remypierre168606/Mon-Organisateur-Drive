@@ -266,13 +266,17 @@ function renderBoard(){
     const sec=document.createElement('section');
     sec.className='bucket';
     sec.dataset.bucketId=b.id;
-    sec.innerHTML=`<div class="bucketHead"><button class="colDragHandle" draggable="true" title="Glisser pour déplacer la colonne">↔</button><input value="${esc(b.title)}"><span class="count">${b.tasks.length}</span><button class="bucketDeleteBtn" type="button" title="Supprimer cette colonne avec double confirmation" aria-label="Supprimer cette colonne">🗑️</button></div><button class="addCard">+ Ajouter une tâche</button><div class="cards"></div>`;
+    sec.innerHTML=`<div class="bucketHead"><button class="colDragHandle" draggable="true" title="Glisser pour déplacer la colonne">↔</button><textarea class="bucketTitleInput" rows="1" title="Nom de la colonne">${esc(b.title)}</textarea><span class="count">${b.tasks.length}</span><button class="bucketDeleteBtn" type="button" title="Supprimer cette colonne avec double confirmation" aria-label="Supprimer cette colonne">🗑️</button></div><button class="addCard">+ Ajouter une tâche</button><div class="cards"></div>`;
     const handle=sec.querySelector('.colDragHandle');
     handle.ondragstart=e=>{dragColumn=b.id; drag=null; e.dataTransfer.effectAllowed='move';};
     sec.ondragover=e=>{if(dragColumn){e.preventDefault();sec.classList.add('columnDragover')}};
     sec.ondragleave=()=>sec.classList.remove('columnDragover');
     sec.ondrop=e=>{sec.classList.remove('columnDragover'); if(dragColumn){e.preventDefault(); reorderBucket(dragColumn,b.id); dragColumn=null; render();}};
-    sec.querySelector('input').onchange=e=>{b.title=e.target.value;render()};
+    const titleBox=sec.querySelector('.bucketTitleInput');
+    const resizeBucketTitle=()=>{titleBox.style.height='auto';titleBox.style.height=(titleBox.scrollHeight)+'px';};
+    resizeBucketTitle();
+    titleBox.oninput=resizeBucketTitle;
+    titleBox.onchange=e=>{b.title=e.target.value.trim()||'Sans titre';render()};
     sec.querySelector('.bucketDeleteBtn').onclick=e=>{e.stopPropagation();deleteBucket(b.id)};
     sec.querySelector('.addCard').onclick=()=>openTask(null,b.id);
     const cards=sec.querySelector('.cards');
@@ -1391,7 +1395,7 @@ if($('companyInfoForm')){
 
 // ---------------- GOOGLE DRIVE SYNC ----------------
 
-const VERSION_LABEL = 'V51.2';
+const VERSION_LABEL = 'V51.3';
 let driveConnectedForBanner = false;
 let lastSaveTimeForBanner = localStorage.getItem('mon-organiseur-last-save-time') || '--';
 let lastLocalSaveTimeForBanner = localStorage.getItem('mon-organiseur-last-local-save-time') || '--';

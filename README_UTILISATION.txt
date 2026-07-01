@@ -28,3 +28,6 @@ V51 : ajout d’une coche dans les RDV pour les afficher comme terminés / barr�
 
 
 V51.2 : ajout d'une petite poubelle visible en haut de chaque colonne avec double validation de suppression.
+
+
+V51.3 : les titres de colonnes et de tâches passent automatiquement sur plusieurs lignes si nécessaire.
