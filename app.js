@@ -80,23 +80,46 @@ function removeChoiceFromList(kind){
     alert('Aucun '+label+' à supprimer dans la liste de choix.');
     return;
   }
-  const msg='Quel '+label+' veux-tu retirer de la liste de choix ?\n\n'+list.map((n,i)=>(i+1)+'. '+n).join('\n')+'\n\nTape le nom exactement comme affiché.';
-  const name=prompt(msg,'');
-  if(!name) return;
-  const clean=name.trim();
-  const index=list.findIndex(n=>n.toLowerCase()===clean.toLowerCase());
-  if(index<0){
-    alert('Nom introuvable dans la liste de choix : '+clean);
-    return;
-  }
-  const realName=list[index];
-  const first=confirm('Supprimer "'+realName+'" de la liste des choix ?\n\nLes tâches existantes conserveront ce nom.');
-  if(!first) return;
-  const second=confirm('Deuxième confirmation :\n\n"'+realName+'" ne sera plus proposé dans le menu déroulant.\nLes anciennes tâches ne seront pas modifiées.\n\nConfirmer ?');
-  if(!second) return;
-  list.splice(index,1);
-  render();
-  alert((isAssignee?'Responsable':'Entreprise')+' retiré(e) de la liste de choix : '+realName);
+  openChoiceDeleteDialog(kind, list.slice().sort((a,b)=>String(a).localeCompare(String(b),'fr',{sensitivity:'base'})));
+}
+
+function openChoiceDeleteDialog(kind, names){
+  const isAssignee = kind === 'assignee';
+  const label = isAssignee ? 'responsable' : 'entreprise';
+  let dlg=document.getElementById('choiceDeleteDialog');
+  if(dlg) dlg.remove();
+  dlg=document.createElement('dialog');
+  dlg.id='choiceDeleteDialog';
+  dlg.innerHTML=`<form method="dialog" class="choiceDeleteForm">
+    <h2>Supprimer un ${label}</h2>
+    <p class="small">La liste ci-dessous est complète et déroulante. Sélectionne l’élément à retirer.</p>
+    <select id="choiceDeleteSelect" size="14">${names.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('')}</select>
+    <label class="confirmLine"><input type="checkbox" id="choiceDeleteConfirm"> Je confirme la suppression de cet élément de la liste de choix.</label>
+    <menu><span></span><span></span><button type="button" id="choiceDeleteCancel">Annuler</button><button type="button" id="choiceDeleteOk" class="dangerButton" disabled>Supprimer</button></menu>
+  </form>`;
+  document.body.appendChild(dlg);
+  const sel=dlg.querySelector('#choiceDeleteSelect');
+  const check=dlg.querySelector('#choiceDeleteConfirm');
+  const ok=dlg.querySelector('#choiceDeleteOk');
+  const update=()=>{ok.disabled=!sel.value || !check.checked;};
+  sel.onchange=update; check.onchange=update;
+  dlg.querySelector('#choiceDeleteCancel').onclick=()=>dlg.close();
+  ok.onclick=()=>{
+    const value=sel.value;
+    if(!value) return;
+    const list=isAssignee ? db.assignees : db.companies;
+    const index=list.findIndex(n=>String(n).toLowerCase()===String(value).toLowerCase());
+    if(index<0){ alert('Nom introuvable dans la liste de choix : '+value); return; }
+    const realName=list[index];
+    const second=confirm('Deuxième validation : retirer "'+realName+'" de la liste des choix ?\n\nLes tâches existantes conserveront ce nom.');
+    if(!second) return;
+    list.splice(index,1);
+    dlg.close();
+    render();
+    alert((isAssignee?'Responsable':'Entreprise')+' retiré(e) de la liste de choix : '+realName);
+  };
+  dlg.addEventListener('close',()=>dlg.remove(),{once:true});
+  dlg.showModal();
 }
 
 function appointments(){ ensurePlanData(); return db.appointments; }
@@ -296,6 +319,19 @@ function reorderBucket(sourceId,targetId){
   const [item]=buckets.splice(from,1);
   buckets.splice(to,0,item);
 }
+
+function autoGrowTextarea(el){
+  if(!el) return;
+  el.style.height='auto';
+  el.style.height=Math.max(44, el.scrollHeight)+'px';
+}
+function enableTaskTitleAutosize(){
+  const el=$('taskTitle');
+  if(!el) return;
+  autoGrowTextarea(el);
+  el.oninput=()=>autoGrowTextarea(el);
+}
+
 function linkUrl(u){
   const url=String(u||'').trim();
   if(/^https?:\/\//i.test(url)) return url;
@@ -841,7 +877,7 @@ function openTask(id,bid){
   const t=found.t, b=found.b;
   $('dialogTitle').textContent=id?'Modifier la tâche':'Nouvelle tâche';
   $('taskId').value=id||'';
-  $('taskTitle').value=t?.title||'';
+  $('taskTitle').value=t?.title||'';enableTaskTitleAutosize();
   $('taskNotes').value=t?.notes||'';
   $('taskAssignee').innerHTML=assigneeOptions(t?.assignee||'');
   $('taskCompany').innerHTML=companyOptions(t?.company||'');
@@ -1395,7 +1431,7 @@ if($('companyInfoForm')){
 
 // ---------------- GOOGLE DRIVE SYNC ----------------
 
-const VERSION_LABEL = 'V51.3';
+const VERSION_LABEL = 'V51.4';
 let driveConnectedForBanner = false;
 let lastSaveTimeForBanner = localStorage.getItem('mon-organiseur-last-save-time') || '--';
 let lastLocalSaveTimeForBanner = localStorage.getItem('mon-organiseur-last-local-save-time') || '--';
