@@ -35,12 +35,15 @@ function stateKey(s){ return JSON.stringify(s||{}); }
 function updateGlobalBackButton(){
   const btn=$('globalBackBtn');
   if(!btn) return;
-  const enabled=navigationStack.length>0;
-  btn.disabled=!enabled;
-  btn.classList.toggle('disabled',!enabled);
-  btn.classList.toggle('isVisible', enabled);
-  btn.style.display = enabled ? 'inline-flex' : 'none';
-  btn.title=enabled?'Revenir à la dernière opération':'Aucune page précédente';
+  // V56.2 : le bouton est toujours visible.
+  // S'il n'y a pas encore d'historique interne, il sert de retour simple vers la vue précédente du navigateur
+  // ou, à défaut, vers le Tableau.
+  const hasInternalHistory=navigationStack.length>0;
+  btn.disabled=false;
+  btn.classList.remove('disabled');
+  btn.classList.add('isVisible');
+  btn.style.display='inline-flex';
+  btn.title=hasInternalHistory?'Revenir à la dernière opération':'Retour';
 }
 function pushNavigationState(){
   const state=currentPageState();
@@ -66,7 +69,18 @@ function restorePageState(state){
 }
 function goPreviousPage(){
   const previous=navigationStack.pop();
-  if(previous) restorePageState(previous);
+  if(previous){
+    restorePageState(previous);
+  }else{
+    // Fallback visible : si l'utilisateur vient d'une vraie page précédente du navigateur, on tente retour navigateur.
+    // Sinon on revient au Tableau principal sans recharger l'application.
+    if(window.history && window.history.length>1){
+      try{ window.history.back(); return; }catch(e){}
+    }
+    view='board';
+    currentDetailState=null;
+    render();
+  }
   updateGlobalBackButton();
 }
 function navigateToView(nextView){
