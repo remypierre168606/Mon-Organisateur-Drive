@@ -1306,3 +1306,6 @@ article.card h3{
 }
 .globalBackBtn:hover{transform:translateX(-2px)!important;filter:brightness(1.06)!important;}
 @media(max-width:850px){.globalBackBtn{left:12px!important;top:74px!important;min-width:92px!important;height:38px!important;font-size:13px!important;}}
+
+/* V56.3 - badge de build visible pour éviter les confusions de cache */
+.buildBadge{font-size:11px!important;opacity:.75!important;background:rgba(15,23,42,.08)!important;border-radius:999px!important;padding:2px 7px!important;margin-left:4px!important;}
