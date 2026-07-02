@@ -1143,3 +1143,48 @@ article.card h3{
   0%,100%{transform:translateY(-50%) scale(1);opacity:1;box-shadow:0 0 0 0 rgba(239,68,68,.75)}
   50%{transform:translateY(-50%) scale(1.35);opacity:.65;box-shadow:0 0 0 9px rgba(239,68,68,0)}
 }
+
+
+/* V55 - bouton activité entreprise tâches + RDV */
+.inlineCompanyActivityBtn{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-width:22px;
+  height:22px;
+  margin-left:4px;
+  border:1px solid rgba(124,58,237,.28);
+  border-radius:999px;
+  background:#f5f3ff;
+  color:#5b21b6;
+  font-size:12px;
+  font-weight:800;
+  cursor:pointer;
+  vertical-align:middle;
+}
+.inlineCompanyActivityBtn:hover{background:#ede9fe;border-color:#7c3aed;transform:translateY(-1px)}
+.inlineCompanyActivityBtn:disabled{opacity:.45;cursor:not-allowed;transform:none}
+.appointmentCompanyActivityBtn{margin-left:8px;margin-top:6px}
+.companyActivityHeader{align-items:center;gap:12px;}
+.companyActivityList{display:flex;flex-direction:column;gap:10px;margin-top:14px;}
+.companyActivityRow{
+  display:grid;
+  grid-template-columns:120px 1fr auto;
+  gap:12px;
+  align-items:center;
+  padding:12px 14px;
+  border:1px solid #e2e8f0;
+  border-radius:14px;
+  background:#fff;
+  box-shadow:0 8px 22px rgba(15,23,42,.06);
+}
+.companyActivityDate strong{display:block;color:#111827;font-size:14px;}
+.companyActivityDate span{display:inline-block;margin-top:4px;color:#6d28d9;font-weight:800;}
+.companyActivityMain strong{display:block;white-space:normal;line-height:1.25;}
+.companyActivityMeta{display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end;}
+.companyActivityRdv{border-left:6px solid #8b5cf6;background:#faf5ff;}
+.companyActivityTask.priority-urgent{border-left:6px solid #ef4444;}
+.companyActivityTask.priority-high{border-left:6px solid #f59e0b;}
+.companyActivityTask.priority-normal{border-left:6px solid #22c55e;}
+.companyActivityTask.priority-low{border-left:6px solid #3b82f6;}
+@media(max-width:700px){.companyActivityRow{grid-template-columns:1fr;}.companyActivityMeta{justify-content:flex-start;}}
