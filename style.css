@@ -1309,3 +1309,26 @@ article.card h3{
 
 /* V56.3 - badge de build visible pour éviter les confusions de cache */
 .buildBadge{font-size:11px!important;opacity:.75!important;background:rgba(15,23,42,.08)!important;border-radius:999px!important;padding:2px 7px!important;margin-left:4px!important;}
+
+
+/* V57 - bouton Retour positionné en haut à gauche de toute la page */
+.globalBackBtn{
+  position:fixed!important;
+  top:10px!important;
+  left:10px!important;
+  z-index:10000!important;
+  display:inline-flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  min-width:105px!important;
+  height:38px!important;
+  padding:0 14px!important;
+  border-radius:12px!important;
+  border:1px solid rgba(124,58,237,.35)!important;
+  background:#fff!important;
+  color:#1e1b4b!important;
+  font-weight:800!important;
+  box-shadow:0 10px 24px rgba(15,23,42,.12)!important;
+}
+.globalBackBtn:hover{transform:translateX(-2px)!important;filter:brightness(1.04)!important;}
+@media(max-width:850px){.globalBackBtn{top:8px!important;left:8px!important;min-width:92px!important;height:36px!important;font-size:13px!important;}}
