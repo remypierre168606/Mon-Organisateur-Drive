@@ -1220,3 +1220,35 @@ article.card h3{
 .companyActivityBigBtn:hover{transform:translateY(-1px);box-shadow:0 6px 14px rgba(124,58,237,.30);}
 .companyActivityBigBtn:disabled{opacity:.45;cursor:not-allowed;transform:none;background:#cbd5e1;box-shadow:none;border-color:#cbd5e1;}
 @media(max-width:700px){.taskCompanyField{align-items:stretch;flex-direction:column}.companyActivityBigBtn{width:100%;}}
+
+
+/* V56 - bouton retour global en haut à gauche de chaque page */
+.globalBackBtn{
+  flex:0 0 auto!important;
+  width:42px!important;
+  height:42px!important;
+  padding:0!important;
+  display:grid!important;
+  place-items:center!important;
+  border-radius:999px!important;
+  border:1px solid rgba(124,58,237,.26)!important;
+  background:linear-gradient(180deg,#fff,#f4efff)!important;
+  color:#5b21b6!important;
+  font-size:22px!important;
+  font-weight:900!important;
+  box-shadow:0 10px 22px rgba(91,33,182,.12)!important;
+}
+.globalBackBtn:hover:not(:disabled){
+  transform:translateX(-2px)!important;
+  background:linear-gradient(135deg,#7c3aed,#4f46e5)!important;
+  color:white!important;
+}
+.globalBackBtn.disabled,.globalBackBtn:disabled{
+  opacity:.38!important;
+  cursor:not-allowed!important;
+  transform:none!important;
+  box-shadow:none!important;
+}
+@media(max-width:850px){
+  .globalBackBtn{margin-bottom:8px!important;}
+}

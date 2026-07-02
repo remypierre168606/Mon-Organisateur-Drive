@@ -26,6 +26,53 @@ var lastSavedSnapshot = '';
 window.__driveSyncReadyFlag = true;
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??'').replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));
+
+let navigationStack=[];
+let currentDetailState=null;
+function cloneDetailState(d){ return d ? JSON.parse(JSON.stringify(d)) : null; }
+function currentPageState(){ return {view, activePlan:db?.activePlan||0, detail:cloneDetailState(currentDetailState)}; }
+function stateKey(s){ return JSON.stringify(s||{}); }
+function updateGlobalBackButton(){
+  const btn=$('globalBackBtn');
+  if(!btn) return;
+  const enabled=navigationStack.length>0;
+  btn.disabled=!enabled;
+  btn.classList.toggle('disabled',!enabled);
+  btn.title=enabled?'Revenir à la page précédente':'Aucune page précédente';
+}
+function pushNavigationState(){
+  const state=currentPageState();
+  const last=navigationStack[navigationStack.length-1];
+  if(last && stateKey(last)===stateKey(state)) return;
+  navigationStack.push(state);
+  if(navigationStack.length>60) navigationStack.shift();
+  updateGlobalBackButton();
+}
+function restorePageState(state){
+  if(!state) return;
+  view=state.view||'board';
+  if(typeof state.activePlan==='number' && db.plans && db.plans[state.activePlan]) db.activePlan=state.activePlan;
+  currentDetailState=null;
+  render();
+  const d=state.detail;
+  if(d){
+    if(d.type==='groupDetail') renderGroupDetail(d.field,d.name,false);
+    if(d.type==='priorityDetail') renderPriorityDetail(d.priority,false);
+    if(d.type==='companyActivity') renderCompanyActivity(d.company,false);
+  }
+  updateGlobalBackButton();
+}
+function goPreviousPage(){
+  const previous=navigationStack.pop();
+  if(previous) restorePageState(previous);
+  updateGlobalBackButton();
+}
+function navigateToView(nextView){
+  if(nextView && nextView!==view) pushNavigationState();
+  view=nextView||view;
+  currentDetailState=null;
+  render();
+}
 function load(){try{return JSON.parse(localStorage.getItem(KEY))||starter()}catch{return starter()}}
 function save(){
   localStorage.setItem(KEY,JSON.stringify(db));
@@ -235,11 +282,15 @@ function taskDateForCompanyActivity(t){
 function openCompanyActivity(company){
   const c=String(company||'').trim();
   if(!c){ alert('Aucune entreprise associée.'); return; }
+  pushNavigationState();
   view='companies';
+  currentDetailState=null;
   render();
-  renderCompanyActivity(c);
+  renderCompanyActivity(c,false);
 }
-function renderCompanyActivity(company){
+function renderCompanyActivity(company, addToHistory=true){
+  if(addToHistory) pushNavigationState();
+  currentDetailState={type:'companyActivity',company};
   ensurePlanData();
   const root=$('companiesView');
   const clean=cleanCompanyName(company);
@@ -280,8 +331,8 @@ function renderCompanyActivity(company){
     <button class="openGroupBtn inlineCompanyInfoBtn" data-company="${esc(company)}">ⓘ Fiche entreprise</button>
   </div>
   <div class="companyActivityList">${html||'<p>Aucune tâche ni RDV pour cette entreprise.</p>'}</div>`;
-  $('backCompanyActivityBtn').onclick=()=>renderGroupedView('company');
-  root.querySelectorAll('.companyActivityTask').forEach(el=>el.onclick=(e)=>{ if(e.target.closest('button,a')) return; db.activePlan=Number(el.dataset.plan); render(); openTask(el.dataset.id); });
+  $('backCompanyActivityBtn').onclick=()=>{ currentDetailState=null; renderGroupedView('company'); updateGlobalBackButton(); };
+  root.querySelectorAll('.companyActivityTask').forEach(el=>el.onclick=(e)=>{ if(e.target.closest('button,a')) return; pushNavigationState(); db.activePlan=Number(el.dataset.plan); currentDetailState=null; render(); openTask(el.dataset.id); });
   root.querySelectorAll('.editAppointmentBtn').forEach(btn=>btn.onclick=(e)=>{e.stopPropagation();openAppointmentDialog(btn.dataset.appt);});
 }
 function appointmentCompanyOptions(selected=''){
@@ -343,6 +394,7 @@ function allPlanTasks(){return db.plans.flatMap((p,planIndex)=>(p.buckets||[]).f
 function isLate(t){return t.dueDate && t.progress!=='done' && t.dueDate<today()}
 function pass(t){const q=$('searchInput').value.toLowerCase();const f=$('filterStatus').value;const text=[t.title,t.notes,t.assignee,t.company,t.dueDate,t.startDate,t.endDate,t.priority,t.progress,t.linkName,t.linkUrl].join(' ').toLowerCase();if(q&&!text.includes(q))return false;if(f==='todo'&&t.progress==='done')return false;if(f==='done'&&t.progress!=='done')return false;if(f==='late'&&!isLate(t))return false;return true}
 function render(){
+  currentDetailState=null;
   ensurePlanData();
   archiveDoneTasks();
   sortChoiceLists();
@@ -364,6 +416,7 @@ function render(){
   if(view==='priorities')renderPriorityView();
   if(view==='archived')renderArchivedView();
   if(view==='trash')renderTrashView();
+  updateGlobalBackButton();
   save();
 }
 function renderPlans(){
@@ -376,7 +429,9 @@ function renderPlans(){
   document.querySelectorAll('.planItem').forEach(el=>{
     el.onclick=(e)=>{
       if(e.target.closest('.planDeleteBtn')) return;
+      pushNavigationState();
       db.activePlan=+el.dataset.i;
+      currentDetailState=null;
       render();
     };
   });
@@ -725,7 +780,7 @@ function attachGroupTaskClicks(root){
   root.querySelectorAll('.groupTask').forEach(el=>{
     el.draggable=true;
     el.ondragstart=(e)=>{ drag=e.currentTarget.dataset.id; e.dataTransfer.effectAllowed='move'; };
-    el.onclick=(e)=>{ if(e.target.closest('.inlineCompanyActivityBtn,.inlineCompanyInfoBtn,.appointmentDot,a,button')) return; db.activePlan=Number(el.dataset.plan); render(); openTask(el.dataset.id); };
+    el.onclick=(e)=>{ if(e.target.closest('.inlineCompanyActivityBtn,.inlineCompanyInfoBtn,.appointmentDot,a,button')) return; pushNavigationState(); db.activePlan=Number(el.dataset.plan); currentDetailState=null; render(); openTask(el.dataset.id); };
   });
 }
 function attachGroupDrop(root, field){
@@ -783,7 +838,9 @@ function renderGroupedView(field){
   attachGroupTaskClicks(root);
   attachGroupDrop(root, field);
 }
-function renderGroupDetail(field, name){
+function renderGroupDetail(field, name, addToHistory=true){
+  if(addToHistory) pushNavigationState();
+  currentDetailState={type:'groupDetail',field,name};
   const root=$(field==='assignee'?'assigneesView':'companiesView');
   const icon=field==='assignee'?'👤':'🏢';
   const label=field==='assignee'?'Responsable':'Entreprise';
@@ -800,7 +857,7 @@ function renderGroupDetail(field, name){
     ${field==='company'?`<button id="openCompanyInfoFromDetailBtn" class="openGroupBtn">ⓘ Ouvrir la fiche entreprise</button>`:''}
   </div>
   <div class="detailTaskList">${tasks.length?tasks.map(t=>taskRowForGroup(t,field)).join(''):`<p>Aucune tâche pour ${esc(name)}.</p>`}</div>`;
-  $('backGroupBtn').onclick=()=>renderGroupedView(field);
+  $('backGroupBtn').onclick=()=>{ currentDetailState=null; renderGroupedView(field); updateGlobalBackButton(); };
   const infoBtn=$('openCompanyInfoFromDetailBtn');
   if(infoBtn) infoBtn.onclick=()=>openCompanyInfo(name);
   attachGroupTaskClicks(root);
@@ -830,7 +887,9 @@ function renderPriorityView(){
   attachGroupTaskClicks(root);
   attachGroupDrop(root, 'priority');
 }
-function renderPriorityDetail(priority){
+function renderPriorityDetail(priority, addToHistory=true){
+  if(addToHistory) pushNavigationState();
+  currentDetailState={type:'priorityDetail',priority};
   const root=$('prioritiesView');
   const tasks=allPlanTasks().filter(t=>(t.priority||'normal')===priority).filter(pass).sort((a,b)=>{
     const pa=(a.plan?.title||'').localeCompare(b.plan?.title||'','fr');
@@ -844,7 +903,7 @@ function renderPriorityDetail(priority){
     <div><h2>📌 Priorité : ${priorityGroupLabel(priority)}</h2><p>${tasks.length} tâche(s) trouvée(s) dans tous les plans.</p></div>
   </div>
   <div class="detailTaskList">${tasks.length?tasks.map(t=>taskRowForPriority(t)).join(''):`<p>Aucune tâche.</p>`}</div>`;
-  $('backPriorityBtn').onclick=()=>renderPriorityView();
+  $('backPriorityBtn').onclick=()=>{ currentDetailState=null; renderPriorityView(); updateGlobalBackButton(); };
   attachGroupTaskClicks(root);
 }
 function taskRowForPriority(t){
@@ -1106,7 +1165,7 @@ $('confirmDeletePlanBtn').onclick=()=>{
   $('deletePlanDialog').close();
   render();
 };
-$('planTitle').onchange=e=>{plan().title=e.target.value;render()};$('addBucketBtn').onclick=()=>{const title=prompt('Nom de la colonne ?','Nouvelle colonne');if(title){plan().buckets.push({id:uid(),title,tasks:[]});render()}};$('addTaskTopBtn').onclick=()=>openTask(null,plan().buckets[0].id);$('newPlanBtn').onclick=()=>{const title=prompt('Nom du nouveau plan ?','Nouveau plan');if(title){db.plans.push({id:uid(),title,buckets:[{id:uid(),title:'À faire',tasks:[]},{id:uid(),title:'En cours',tasks:[]},{id:uid(),title:'Terminé',tasks:[]}]});db.activePlan=db.plans.length-1;render()}};document.querySelectorAll('.nav').forEach(n=>n.onclick=()=>{view=n.dataset.view;render()});$('searchInput').oninput=render;$('filterStatus').onchange=render;$('exportBtn').onclick=()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(db,null,2)],{type:'application/json'}));a.download='mon-organiseur-sauvegarde.json';a.click()};$('importInput').onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{db=JSON.parse(r.result);render()}catch{alert('Fichier non valide')}};r.readAsText(f)};$('resetBtn').onclick=()=>{if(confirm('Tout effacer et remettre le modèle de départ ?')){db=starter();render()}};
+$('planTitle').onchange=e=>{plan().title=e.target.value;render()};$('addBucketBtn').onclick=()=>{const title=prompt('Nom de la colonne ?','Nouvelle colonne');if(title){plan().buckets.push({id:uid(),title,tasks:[]});render()}};$('addTaskTopBtn').onclick=()=>openTask(null,plan().buckets[0].id);$('newPlanBtn').onclick=()=>{const title=prompt('Nom du nouveau plan ?','Nouveau plan');if(title){pushNavigationState();db.plans.push({id:uid(),title,buckets:[{id:uid(),title:'À faire',tasks:[]},{id:uid(),title:'En cours',tasks:[]},{id:uid(),title:'Terminé',tasks:[]}]});db.activePlan=db.plans.length-1;currentDetailState=null;render()}};document.querySelectorAll('.nav').forEach(n=>n.onclick=()=>navigateToView(n.dataset.view));if($('globalBackBtn')) $('globalBackBtn').onclick=goPreviousPage;$('searchInput').oninput=render;$('filterStatus').onchange=render;$('exportBtn').onclick=()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(db,null,2)],{type:'application/json'}));a.download='mon-organiseur-sauvegarde.json';a.click()};$('importInput').onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{db=JSON.parse(r.result);render()}catch{alert('Fichier non valide')}};r.readAsText(f)};$('resetBtn').onclick=()=>{if(confirm('Tout effacer et remettre le modèle de départ ?')){db=starter();render()}};
 
 
 
@@ -1540,7 +1599,7 @@ if($('companyInfoForm')){
 
 // ---------------- GOOGLE DRIVE SYNC ----------------
 
-const VERSION_LABEL = 'V55';
+const VERSION_LABEL = 'V56';
 let driveConnectedForBanner = false;
 let lastSaveTimeForBanner = localStorage.getItem('mon-organiseur-last-save-time') || '--';
 let lastLocalSaveTimeForBanner = localStorage.getItem('mon-organiseur-last-local-save-time') || '--';
