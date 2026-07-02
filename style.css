@@ -1188,3 +1188,35 @@ article.card h3{
 .companyActivityTask.priority-normal{border-left:6px solid #22c55e;}
 .companyActivityTask.priority-low{border-left:6px solid #3b82f6;}
 @media(max-width:700px){.companyActivityRow{grid-template-columns:1fr;}.companyActivityMeta{justify-content:flex-start;}}
+
+/* V55.1 - bouton activité entreprise bien visible */
+.inlineCompanyActivityBtn{
+  background:linear-gradient(135deg,#7c3aed,#2563eb)!important;
+  color:#fff!important;
+  border:1px solid rgba(255,255,255,.75)!important;
+  box-shadow:0 3px 8px rgba(124,58,237,.28)!important;
+  min-width:24px!important;
+  height:24px!important;
+  font-size:13px!important;
+}
+.inlineCompanyActivityBtn:hover{
+  background:linear-gradient(135deg,#6d28d9,#1d4ed8)!important;
+  box-shadow:0 5px 12px rgba(124,58,237,.36)!important;
+}
+.taskCompanyField{display:flex;align-items:end;gap:8px;width:100%;}
+.taskCompanyField label{flex:1;margin:0;}
+.companyActivityBigBtn{
+  height:42px;
+  padding:0 12px;
+  border:1px solid rgba(124,58,237,.45);
+  border-radius:12px;
+  background:linear-gradient(135deg,#7c3aed,#2563eb);
+  color:white;
+  font-weight:800;
+  cursor:pointer;
+  white-space:nowrap;
+  box-shadow:0 4px 10px rgba(124,58,237,.22);
+}
+.companyActivityBigBtn:hover{transform:translateY(-1px);box-shadow:0 6px 14px rgba(124,58,237,.30);}
+.companyActivityBigBtn:disabled{opacity:.45;cursor:not-allowed;transform:none;background:#cbd5e1;box-shadow:none;border-color:#cbd5e1;}
+@media(max-width:700px){.taskCompanyField{align-items:stretch;flex-direction:column}.companyActivityBigBtn{width:100%;}}

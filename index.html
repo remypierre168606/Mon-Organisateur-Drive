@@ -11,7 +11,7 @@
 </head>
 <body>
   <aside class="sidebar">
-    <div class="brand"><div class="logo">O</div><div><strong>Mon Organiseur</strong><span>version Drive V55</span></div></div>
+    <div class="brand"><div class="logo">O</div><div><strong>Mon Organiseur</strong><span>version Drive V55.1</span></div></div>
     <button class="nav active" data-view="settings">⚙️ Drive</button>
     <button class="nav" data-view="board">📋 Tableau</button>
     <button class="nav" data-view="list">☑️ Liste</button>
@@ -111,7 +111,7 @@
       <label>Titre<textarea id="taskTitle" required maxlength="160" rows="1" placeholder="Titre de la tâche..."></textarea></label>
       <div class="grid2"><label>Plan<select id="taskPlan"></select></label><label>Colonne<select id="taskBucket"></select></label></div>
       <label>Notes<textarea id="taskNotes" rows="4" placeholder="Détails de la tâche..."></textarea></label>
-      <div class="grid2"><label>Responsable<select id="taskAssignee"></select></label><label>Entreprise<select id="taskCompany"></select></label></div>
+      <div class="grid2"><label>Responsable<select id="taskAssignee"></select></label><div class="taskCompanyField"><label>Entreprise<select id="taskCompany"></select></label><button type="button" id="taskCompanyActivityBtn" class="companyActivityBigBtn" title="Voir toutes les tâches et RDV de cette entreprise">📋 Activité</button></div></div>
       <input id="taskDueDate" type="hidden">
       <div class="grid2"><label>Date de début<input id="taskStartDate" type="date"></label><label>Date de fin<input id="taskEndDate" type="date"></label></div>
       <div class="grid2"><label>Priorité<select id="taskPriority"><option value="low">Basse</option><option value="normal">Normale</option><option value="high">Haute</option><option value="urgent">Urgente</option></select></label><label>Progression<select id="taskProgress"><option value="todo">Non commencé</option><option value="doing">En cours</option><option value="done">Terminé</option></select></label></div>

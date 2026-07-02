@@ -207,6 +207,28 @@ function companyActionButtonsHtml(company){
   if(!c) return '';
   return ` ${companyActivityButtonHtml(c)} <button class="inlineCompanyInfoBtn" data-company="${esc(c)}" title="Fiche entreprise">ⓘ</button>`;
 }
+
+function setupTaskCompanyActivityButton(){
+  const select=$('taskCompany');
+  const btn=$('taskCompanyActivityBtn');
+  if(!select || !btn) return;
+  const refresh=()=>{
+    const c=String(select.value||'').trim();
+    btn.disabled=!c;
+    btn.dataset.company=c;
+    btn.textContent=c?'📋 Activité':'📋 Activité';
+    btn.title=c?('Voir toutes les tâches et RDV de '+c):'Choisis une entreprise';
+  };
+  btn.onclick=(e)=>{
+    e.preventDefault();
+    const c=String(select.value||'').trim();
+    if(!c){ alert('Choisis d’abord une entreprise.'); return; }
+    if($('taskDialog')?.open) $('taskDialog').close();
+    openCompanyActivity(c);
+  };
+  select.onchange=()=>{ refresh(); };
+  refresh();
+}
 function taskDateForCompanyActivity(t){
   return t.endDate || t.dueDate || t.startDate || '9999-99-99';
 }
@@ -965,6 +987,7 @@ function openTask(id,bid){
   $('taskNotes').value=t?.notes||'';
   $('taskAssignee').innerHTML=assigneeOptions(t?.assignee||'');
   $('taskCompany').innerHTML=companyOptions(t?.company||'');
+  setupTaskCompanyActivityButton();
   const taskEndValue=t?.endDate||t?.dueDate||'';
   if($('taskDueDate')) $('taskDueDate').value=taskEndValue;
   if($('taskStartDate')) $('taskStartDate').value=t?.startDate||'';
