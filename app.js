@@ -38,7 +38,9 @@ function updateGlobalBackButton(){
   const enabled=navigationStack.length>0;
   btn.disabled=!enabled;
   btn.classList.toggle('disabled',!enabled);
-  btn.title=enabled?'Revenir à la page précédente':'Aucune page précédente';
+  btn.classList.toggle('isVisible', enabled);
+  btn.style.display = enabled ? 'inline-flex' : 'none';
+  btn.title=enabled?'Revenir à la dernière opération':'Aucune page précédente';
 }
 function pushNavigationState(){
   const state=currentPageState();
