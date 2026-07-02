@@ -1311,7 +1311,7 @@ article.card h3{
 .buildBadge{font-size:11px!important;opacity:.75!important;background:rgba(15,23,42,.08)!important;border-radius:999px!important;padding:2px 7px!important;margin-left:4px!important;}
 
 
-/* V57 - bouton Retour positionné en haut à gauche de toute la page */
+/* V58 - bouton Retour vraiment en haut à gauche de la fenêtre */
 .globalBackBtn{
   position:fixed!important;
   top:10px!important;
@@ -1332,3 +1332,26 @@ article.card h3{
 }
 .globalBackBtn:hover{transform:translateX(-2px)!important;filter:brightness(1.04)!important;}
 @media(max-width:850px){.globalBackBtn{top:8px!important;left:8px!important;min-width:92px!important;height:36px!important;font-size:13px!important;}}
+
+
+/* V58 - bouton Retour vraiment en haut à gauche de la fenêtre, hors topbar */
+body > #globalBackBtn.globalBackBtn{
+  position:fixed!important;
+  top:8px!important;
+  left:8px!important;
+  z-index:2147483000!important;
+  display:inline-flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  min-width:110px!important;
+  height:40px!important;
+  padding:0 14px!important;
+  border-radius:12px!important;
+  border:1px solid rgba(124,58,237,.42)!important;
+  background:linear-gradient(180deg,#ffffff,#f4efff)!important;
+  color:#1e1b4b!important;
+  font-weight:900!important;
+  box-shadow:0 10px 26px rgba(15,23,42,.18)!important;
+}
+body > #globalBackBtn.globalBackBtn:hover{transform:translateX(-2px)!important;filter:brightness(1.04)!important;}
+@media(max-width:850px){body > #globalBackBtn.globalBackBtn{top:8px!important;left:8px!important;min-width:96px!important;height:36px!important;font-size:13px!important;}}
