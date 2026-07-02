@@ -1355,3 +1355,33 @@ body > #globalBackBtn.globalBackBtn{
 }
 body > #globalBackBtn.globalBackBtn:hover{transform:translateX(-2px)!important;filter:brightness(1.04)!important;}
 @media(max-width:850px){body > #globalBackBtn.globalBackBtn{top:8px!important;left:8px!important;min-width:96px!important;height:36px!important;font-size:13px!important;}}
+
+
+/* V59 - position validée selon la capture utilisateur :
+   bouton Retour en haut à gauche, sans chevaucher JOURNALIER ni la carte logo. */
+body > #globalBackBtn.globalBackBtn{
+  position:fixed!important;
+  top:8px!important;
+  left:8px!important;
+  z-index:2147483000!important;
+  display:inline-flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  min-width:110px!important;
+  height:40px!important;
+  padding:0 14px!important;
+  border-radius:12px!important;
+  border:1px solid rgba(124,58,237,.42)!important;
+  background:linear-gradient(180deg,#ffffff,#f4efff)!important;
+  color:#1e1b4b!important;
+  font-weight:900!important;
+  box-shadow:0 10px 26px rgba(15,23,42,.18)!important;
+}
+body > #globalBackBtn.globalBackBtn:hover{transform:translateX(-2px)!important;filter:brightness(1.04)!important;}
+.sidebar{
+  padding-top:72px!important;
+}
+@media(max-width:850px){
+  body > #globalBackBtn.globalBackBtn{top:8px!important;left:8px!important;min-width:96px!important;height:36px!important;font-size:13px!important;}
+  .sidebar{padding-top:58px!important;}
+}

@@ -1615,8 +1615,8 @@ if($('companyInfoForm')){
 
 // ---------------- GOOGLE DRIVE SYNC ----------------
 
-const VERSION_LABEL = 'V58';
-const BUILD_LABEL = 'build 20260702-2120';
+const VERSION_LABEL = 'V59';
+const BUILD_LABEL = 'build 20260702-2124';
 let driveConnectedForBanner = false;
 let lastSaveTimeForBanner = localStorage.getItem('mon-organiseur-last-save-time') || '--';
 let lastLocalSaveTimeForBanner = localStorage.getItem('mon-organiseur-last-local-save-time') || '--';
