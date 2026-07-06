@@ -1,0 +1,5 @@
+Mon Organiseur Drive Web V63 CORRIGEE
+Build 20260706-1715
+
+Correction : tous les libellés internes affichent V63 et non V62.
+Fonctions V63 : menu déroulant d'impression avec Taille réelle, 1 page A4 paysage, A3 paysage, sans changer de page/dossier.
