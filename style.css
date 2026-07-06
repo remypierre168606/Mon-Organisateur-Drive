@@ -1386,41 +1386,38 @@ body > #globalBackBtn.globalBackBtn:hover{transform:translateX(-2px)!important;f
   .sidebar{padding-top:58px!important;}
 }
 
-/* V60 - Impression propre du plan principal */
+/* V60 - Impression propre de la page affichée */
 .printBtn{white-space:nowrap}
 @media print{
   @page{size:A4 landscape;margin:10mm;}
-  html,body{background:#fff!important;color:#111!important;overflow:visible!important;height:auto!important;}
+  html,body{background:#fff!important;color:#111!important;overflow:visible!important;height:auto!important;display:block!important;}
   .sidebar,
   .globalBackBtn,
   .versionBanner,
   .topActions,
-  #settingsView,
-  #listView,
-  #calendarView,
-  #assigneesView,
-  #companiesView,
-  #prioritiesView,
-  #archivedView,
-  #trashView,
   dialog,
   .addCard,
   .bucketDeleteBtn,
   .colDragHandle,
   .count,
   button{display:none!important;}
-  .app{margin:0!important;padding:0!important;width:100%!important;max-width:none!important;overflow:visible!important;background:#fff!important;}
+  .app{margin:0!important;padding:0!important;width:100%!important;max-width:none!important;overflow:visible!important;background:#fff!important;display:block!important;}
   .topbar{display:block!important;position:static!important;margin:0 0 8mm 0!important;padding:0!important;background:#fff!important;border:0!important;box-shadow:none!important;}
   .topIdentity{display:block!important;width:100%!important;text-align:center!important;}
   .topIdentity p{display:block!important;margin:2mm 0 0!important;color:#555!important;font-size:10pt!important;}
   .planTitle{display:block!important;width:100%!important;border:0!important;background:transparent!important;text-align:center!important;font-size:18pt!important;font-weight:800!important;color:#111!important;box-shadow:none!important;}
   .view.hidden{display:none!important;}
-  #boardView{display:grid!important;grid-template-columns:repeat(auto-fit,minmax(55mm,1fr))!important;gap:5mm!important;height:auto!important;overflow:visible!important;padding:0!important;background:#fff!important;}
-  .bucket{break-inside:avoid!important;page-break-inside:avoid!important;background:#fff!important;border:1px solid #999!important;border-radius:4mm!important;box-shadow:none!important;padding:3mm!important;min-width:0!important;}
+  .view:not(.hidden){display:block!important;padding:0!important;overflow:visible!important;height:auto!important;background:#fff!important;}
+  #boardView:not(.hidden){display:grid!important;grid-template-columns:repeat(auto-fit,minmax(55mm,1fr))!important;gap:5mm!important;height:auto!important;overflow:visible!important;padding:0!important;background:#fff!important;}
+  .board{display:contents!important;height:auto!important;overflow:visible!important;}
+  .bucket{break-inside:avoid!important;page-break-inside:avoid!important;background:#fff!important;border:1px solid #999!important;border-radius:4mm!important;box-shadow:none!important;padding:3mm!important;min-width:0!important;width:auto!important;max-height:none!important;}
   .bucketHead{display:block!important;margin-bottom:3mm!important;}
   .bucketTitleInput{border:0!important;background:transparent!important;box-shadow:none!important;color:#111!important;font-weight:800!important;font-size:13pt!important;resize:none!important;overflow:hidden!important;width:100%!important;padding:0!important;}
   .cards{display:block!important;overflow:visible!important;min-height:0!important;}
-  .card{break-inside:avoid!important;page-break-inside:avoid!important;background:#fff!important;border:1px solid #aaa!important;box-shadow:none!important;margin:0 0 3mm 0!important;padding:3mm!important;color:#111!important;}
+  .card,.groupTask,.day,.stat,.settingsCard,.companyActivityRow{break-inside:avoid!important;page-break-inside:avoid!important;background:#fff!important;border:1px solid #aaa!important;box-shadow:none!important;margin:0 0 3mm 0!important;padding:3mm!important;color:#111!important;}
+  .listTable{width:100%!important;border-collapse:collapse!important;border-spacing:0!important;}
+  .listTable th,.listTable td{border:1px solid #aaa!important;padding:5px!important;color:#111!important;background:#fff!important;}
+  .calendarGrid,.statsGrid,.groupGrid{display:block!important;}
   .taskTitle,.cardTitle{color:#111!important;}
   a{color:#111!important;text-decoration:underline!important;}
 }
