@@ -1387,8 +1387,8 @@ body > #globalBackBtn.globalBackBtn:hover{transform:translateX(-2px)!important;f
 }
 
 
-/* V62 - Impression contextuelle avec option 1 page / A3 */
-#printCurrentBtn,#printOnePageBtn,#printA3Btn{background:#f4f0ff!important;border-color:#ddd6fe!important;color:#4c1d95!important;font-weight:900!important}
+/* V63 - Impression contextuelle avec menu déroulant */
+.printMenu{background:#f4f0ff!important;border:1px solid #ddd6fe!important;color:#4c1d95!important;font-weight:900!important;border-radius:10px!important;padding:8px 10px!important;min-height:36px!important;max-width:150px!important}
 @media print{
   @page{size:auto;margin:10mm}
   html,body{background:#fff!important;color:#000!important;display:block!important;min-height:auto!important;width:auto!important;overflow:visible!important;font-size:11px!important}
