@@ -1409,32 +1409,32 @@ body > #globalBackBtn.globalBackBtn:hover{transform:translateX(-2px)!important;f
 
 /* V62 - Options d'impression */
 @media print{
-  body.printOnePage @page{size:A4 landscape;margin:4mm}
+  body.printOnePage page@page{size:A4 landscape;margin:4mm}
   body.printA3 @page{size:A3 landscape;margin:8mm}
-  body.printOnePage .topbar, body.printOnePage .topbarCompact{padding:0 0 3mm 0!important}
-  body.printOnePage .planTitle{font-size:14px!important;line-height:1.1!important}
-  body.printOnePage .topbar p{font-size:9px!important;margin:0!important}
-  body.printOnePage .app{zoom:.54!important;transform-origin:top left!important}
-  body.printOnePage .view{width:185%!important;max-width:none!important}
-  body.printOnePage .board{display:flex!important;flex-wrap:nowrap!important;gap:3mm!important;align-items:flex-start!important;overflow:visible!important;width:max-content!important;max-width:none!important}
-  body.printOnePage .bucket{width:52mm!important;min-width:52mm!important;border-radius:4px!important}
-  body.printOnePage .bucketHead{padding:3px 5px!important}
-  body.printOnePage .bucketTitleInput{font-size:10px!important;line-height:1.1!important}
-  body.printOnePage .count{font-size:8px!important;padding:1px 4px!important}
-  body.printOnePage .cards{padding:1.5mm!important}
-  body.printOnePage .card{padding:5px!important;margin:0 0 1.5mm!important;border-radius:4px!important;font-size:9px!important;line-height:1.15!important}
-  body.printOnePage .card h3{font-size:10px!important;margin:0 0 3px!important;line-height:1.1!important}
-  body.printOnePage .pill{font-size:8px!important;padding:1px 4px!important}
-  body.printOnePage .small,.taskLinksPreview,.taskDocPreview{font-size:8px!important;margin-top:2px!important}
-  body.printOnePage .listTable, body.printOnePage .groupList, body.printOnePage .companyActivityList, body.printOnePage .priorityList{font-size:9px!important;line-height:1.12!important}
-  body.printOnePage .companyActivityRow, body.printOnePage .groupTask, body.printOnePage .appointmentItem, body.printOnePage .day, body.printOnePage .stat, body.printOnePage .taskrow{padding:2mm!important;margin:0 0 1.5mm!important}
-  body.printOnePage .groupHeader, body.printOnePage .detailHeader, body.printOnePage .companyActivityHeader, body.printOnePage .companyInfoPanel{padding:3mm!important;margin:0 0 2mm!important}
+  body.printOnePage page.topbar, body.printOnePage page.topbarCompact{padding:0 0 3mm 0!important}
+  body.printOnePage page.planTitle{font-size:14px!important;line-height:1.1!important}
+  body.printOnePage page.topbar p{font-size:9px!important;margin:0!important}
+  body.printOnePage page.app{zoom:.54!important;transform-origin:top left!important}
+  body.printOnePage page.view{width:185%!important;max-width:none!important}
+  body.printOnePage page.board{display:flex!important;flex-wrap:nowrap!important;gap:3mm!important;align-items:flex-start!important;overflow:visible!important;width:max-content!important;max-width:none!important}
+  body.printOnePage page.bucket{width:52mm!important;min-width:52mm!important;border-radius:4px!important}
+  body.printOnePage page.bucketHead{padding:3px 5px!important}
+  body.printOnePage page.bucketTitleInput{font-size:10px!important;line-height:1.1!important}
+  body.printOnePage page.count{font-size:8px!important;padding:1px 4px!important}
+  body.printOnePage page.cards{padding:1.5mm!important}
+  body.printOnePage page.card{padding:5px!important;margin:0 0 1.5mm!important;border-radius:4px!important;font-size:9px!important;line-height:1.15!important}
+  body.printOnePage page.card h3{font-size:10px!important;margin:0 0 3px!important;line-height:1.1!important}
+  body.printOnePage page.pill{font-size:8px!important;padding:1px 4px!important}
+  body.printOnePage page.small,.taskLinksPreview,.taskDocPreview{font-size:8px!important;margin-top:2px!important}
+  body.printOnePage page.listTable, body.printOnePage page.groupList, body.printOnePage page.companyActivityList, body.printOnePage page.priorityList{font-size:9px!important;line-height:1.12!important}
+  body.printOnePage page.companyActivityRow, body.printOnePage page.groupTask, body.printOnePage page.appointmentItem, body.printOnePage page.day, body.printOnePage page.stat, body.printOnePage page.taskrow{padding:2mm!important;margin:0 0 1.5mm!important}
+  body.printOnePage page.groupHeader, body.printOnePage page.detailHeader, body.printOnePage page.companyActivityHeader, body.printOnePage page.companyInfoPanel{padding:3mm!important;margin:0 0 2mm!important}
   body.printA3 .app{zoom:.82!important;transform-origin:top left!important}
   body.printA3 .board{flex-wrap:nowrap!important;gap:4mm!important;width:max-content!important;overflow:visible!important}
   body.printA3 .bucket{width:62mm!important;min-width:62mm!important}
 }
 
-/* V64 - Impression propre : aucun menu ni en-tête inutile sur toutes les pages */
+/* V65 - Impression isolée : aucun menu ni en-tête inutile sur toutes les pages */
 @media print{
   @page{margin:6mm!important;}
   html,body{background:#fff!important;color:#000!important;display:block!important;width:auto!important;min-height:auto!important;overflow:visible!important;font-size:10px!important;}
@@ -1458,13 +1458,13 @@ body > #globalBackBtn.globalBackBtn:hover{transform:translateX(-2px)!important;f
   .companyActivityMeta,.groupMeta{color:#000!important;font-size:8px!important;}
   button,input,select,textarea{box-shadow:none!important;}
   a{color:#000!important;text-decoration:underline!important;}
-  body.printOnePage .app{zoom:.58!important;transform-origin:top left!important;}
-  body.printOnePage .view{width:172%!important;max-width:none!important;}
-  body.printOnePage .board{flex-wrap:nowrap!important;gap:2mm!important;width:max-content!important;}
-  body.printOnePage .bucket{width:48mm!important;min-width:48mm!important;}
-  body.printOnePage .card{font-size:8px!important;padding:1.5mm!important;margin-bottom:1mm!important;}
-  body.printOnePage .card h3{font-size:9px!important;}
-  body.printOnePage .companyActivityRow,body.printOnePage .groupTask,body.printOnePage .appointmentItem,body.printOnePage .day,body.printOnePage .stat,body.printOnePage tr.taskrow{padding:1.5mm!important;margin-bottom:1mm!important;}
+  body.printOnePage page.app{zoom:.58!important;transform-origin:top left!important;}
+  body.printOnePage page.view{width:172%!important;max-width:none!important;}
+  body.printOnePage page.board{flex-wrap:nowrap!important;gap:2mm!important;width:max-content!important;}
+  body.printOnePage page.bucket{width:48mm!important;min-width:48mm!important;}
+  body.printOnePage page.card{font-size:8px!important;padding:1.5mm!important;margin-bottom:1mm!important;}
+  body.printOnePage page.card h3{font-size:9px!important;}
+  body.printOnePage page.companyActivityRow,body.printOnePage page.groupTask,body.printOnePage page.appointmentItem,body.printOnePage page.day,body.printOnePage page.stat,body.printOnePage pagetr.taskrow{padding:1.5mm!important;margin-bottom:1mm!important;}
   body.printA3 .app{zoom:.82!important;transform-origin:top left!important;}
   body.printA3 .board{flex-wrap:nowrap!important;gap:3mm!important;width:max-content!important;}
   body.printA3 .bucket{width:58mm!important;min-width:58mm!important;}

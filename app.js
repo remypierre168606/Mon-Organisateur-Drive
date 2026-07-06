@@ -1186,20 +1186,64 @@ $('confirmDeletePlanBtn').onclick=()=>{
 
 
 function preparePrintMode(mode){
-  // V64 : impression contextuelle via menu déroulant, sans changer de page.
-  // mode = normal / onepage / a3
-  document.body.classList.remove('printOnePage','printA3');
-  document.body.classList.add('printMode');
-  if(mode==='onepage') document.body.classList.add('printOnePage');
-  if(mode==='a3') document.body.classList.add('printA3');
-  const title = (document.querySelector('#planTitle') && document.querySelector('#planTitle').value) || 'Mon Organiseur';
-  document.title = title + ' - impression V64';
-  setTimeout(()=>window.print(), 80);
+  // V65 : moteur d'impression isolé.
+  // On imprime uniquement la vue actuellement visible, dans un document temporaire.
+  // Cela évite d'imprimer les pages précédentes/parasites (liste entreprises + fiche, etc.).
+  const activeView = document.querySelector('.view:not(.hidden)') || document.querySelector('#boardView') || document.body;
+  const clone = activeView.cloneNode(true);
+  clone.querySelectorAll('button, input, select, textarea, dialog, .backBtn, .globalBackBtn, .topbar, .topActions, .versionBanner, .nav, .ghost, .addCard, .bucketDeleteBtn, .planDeleteBtn, .editAppointmentBtn, .openPriorityBtn, .openCompanyActivityBtn, .inlineCompanyActivityBtn, .inlineCompanyInfoBtn, .companyInfoOpenBtn, .calAdd, .calAddRdv').forEach(el=>el.remove());
+  clone.classList.remove('hidden');
+
+  const title = ((document.querySelector('#planTitle') && document.querySelector('#planTitle').value) || 'Mon Organiseur').trim();
+  const modeClass = mode==='onepage' ? 'printOnePage' : (mode==='a3' ? 'printA3' : 'printNormal');
+  const frame = document.createElement('iframe');
+  frame.setAttribute('aria-hidden','true');
+  frame.style.position='fixed';
+  frame.style.right='0';
+  frame.style.bottom='0';
+  frame.style.width='0';
+  frame.style.height='0';
+  frame.style.border='0';
+  document.body.appendChild(frame);
+  const doc = frame.contentWindow.document;
+  const styleHref = 'style.css?v=20260706-1935-v65';
+  doc.open();
+  doc.write(`<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>${esc(title)} - impression V65</title><link rel="stylesheet" href="${styleHref}"><style>
+    @page{size:A4 landscape;margin:6mm;}
+    html,body{background:#fff!important;margin:0!important;padding:0!important;color:#111827!important;}
+    body{font-family:Arial,Helvetica,sans-serif!important;}
+    .printDoc{width:100%!important;max-width:none!important;margin:0!important;padding:0!important;background:#fff!important;}
+    .view{display:block!important;max-width:none!important;width:100%!important;margin:0!important;padding:0!important;background:#fff!important;}
+    .hidden{display:block!important;}
+    button,input,select,textarea,.topbar,.sidebar,.versionBanner,.globalBackBtn,.backBtn,.topActions,.ghost,.fileBtn,.addCard,.bucketDeleteBtn,.planDeleteBtn,.editAppointmentBtn,.openPriorityBtn,.openCompanyActivityBtn,.inlineCompanyActivityBtn,.inlineCompanyInfoBtn,.companyInfoOpenBtn,.calAdd,.calAddRdv,dialog{display:none!important;}
+    .groupHeader,.detailHeader,.companyActivityHeader,.companyInfoPanel{margin:0 0 5mm!important;padding:0!important;border:0!important;box-shadow:none!important;background:#fff!important;}
+    .groupHeader h2,.detailHeader h2,.companyActivityHeader h2{margin:0 0 2mm!important;font-size:18px!important;}
+    .groupHeader p,.detailHeader p,.companyActivityHeader p{margin:0!important;font-size:11px!important;color:#4b5563!important;}
+    .companyActivityRow,.groupTask,.appointmentItem,.day,.stat,tr.taskrow,.card,.bucket{break-inside:avoid!important;page-break-inside:avoid!important;box-shadow:none!important;}
+    .companyActivityRow,.groupTask,.appointmentItem{margin:0 0 2mm!important;padding:2mm!important;border:1px solid #e5e7eb!important;border-radius:5px!important;}
+    .board{display:flex!important;flex-wrap:nowrap!important;gap:3mm!important;align-items:flex-start!important;overflow:visible!important;width:max-content!important;}
+    .bucket{min-width:55mm!important;width:55mm!important;border:1px solid #ddd!important;border-radius:5px!important;background:#f8f8ff!important;}
+    .cards{padding:1.5mm!important;}
+    .card{font-size:9px!important;padding:1.5mm!important;margin:0 0 1mm!important;border:1px solid #e5e7eb!important;border-radius:4px!important;}
+    .card h3{font-size:10px!important;margin:0 0 2px!important;}
+    body.printOnePage{zoom:.60;}
+    body.printOnePage .bucket{min-width:46mm!important;width:46mm!important;}
+    body.printOnePage .companyActivityRow,body.printOnePage .groupTask,body.printOnePage .appointmentItem{padding:1.2mm!important;margin-bottom:1mm!important;font-size:9px!important;}
+    body.printOnePage .groupHeader h2,body.printOnePage .detailHeader h2{font-size:14px!important;}
+    @media print{body{print-color-adjust:exact;-webkit-print-color-adjust:exact;} body.printA3{@page{size:A3 landscape;margin:8mm;}}}
+  </style></head><body class="${modeClass}"><main class="printDoc">${clone.outerHTML}</main></body></html>`);
+  doc.close();
+  const cleanup=()=>setTimeout(()=>{try{frame.remove();}catch(e){}},500);
+  frame.onload=()=>{
+    setTimeout(()=>{
+      try{ frame.contentWindow.focus(); frame.contentWindow.print(); }
+      finally{ cleanup(); }
+    },250);
+  };
 }
 function printCurrentPage(){ preparePrintMode('normal'); }
 function printOnePage(){ preparePrintMode('onepage'); }
 function printA3Page(){ preparePrintMode('a3'); }
-window.addEventListener('afterprint',()=>document.body.classList.remove('printMode','printOnePage','printA3'));
 
 $('planTitle').onchange=e=>{plan().title=e.target.value;render()};$('addBucketBtn').onclick=()=>{const title=prompt('Nom de la colonne ?','Nouvelle colonne');if(title){plan().buckets.push({id:uid(),title,tasks:[]});render()}};$('addTaskTopBtn').onclick=()=>openTask(null,plan().buckets[0].id);$('newPlanBtn').onclick=()=>{const title=prompt('Nom du nouveau plan ?','Nouveau plan');if(title){pushNavigationState();db.plans.push({id:uid(),title,buckets:[{id:uid(),title:'À faire',tasks:[]},{id:uid(),title:'En cours',tasks:[]},{id:uid(),title:'Terminé',tasks:[]}]});db.activePlan=db.plans.length-1;view='board';currentDetailState=null;render()}};document.querySelectorAll('.nav').forEach(n=>n.onclick=()=>navigateToView(n.dataset.view));if($('globalBackBtn')) $('globalBackBtn').onclick=goPreviousPage;if($('printMenu')) $('printMenu').onchange=e=>{const mode=e.target.value;if(!mode)return;preparePrintMode(mode);setTimeout(()=>{e.target.value='';},150);};$('searchInput').oninput=render;$('filterStatus').onchange=render;$('exportBtn').onclick=()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(db,null,2)],{type:'application/json'}));a.download='mon-organiseur-sauvegarde.json';a.click()};$('importInput').onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{db=JSON.parse(r.result);render()}catch{alert('Fichier non valide')}};r.readAsText(f)};$('resetBtn').onclick=()=>{if(confirm('Tout effacer et remettre le modèle de départ ?')){db=starter();render()}};
 
@@ -1635,7 +1679,7 @@ if($('companyInfoForm')){
 
 // ---------------- GOOGLE DRIVE SYNC ----------------
 
-const VERSION_LABEL = 'V64';
+const VERSION_LABEL = 'V65';
 const BUILD_LABEL = 'build 20260706-1325-reconstruit-depuis-V59';
 let driveConnectedForBanner = false;
 let lastSaveTimeForBanner = localStorage.getItem('mon-organiseur-last-save-time') || '--';

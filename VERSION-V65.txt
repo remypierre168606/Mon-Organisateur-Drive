@@ -1,0 +1,9 @@
+Mon Organiseur Drive Web - V65
+Build 20260706-1935
+
+Modifications V65 :
+- Nouveau moteur d’impression isolé dans un document temporaire.
+- Imprime uniquement la vue affichée.
+- Supprime les pages parasites, par exemple la liste des entreprises avant une fiche entreprise.
+- Menu d’impression conservé : 1 page, taille réelle, A3 paysage.
+- Version reconstruite à partir de V64, elle-même issue de V59.
