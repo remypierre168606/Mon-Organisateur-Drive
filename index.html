@@ -3,19 +3,25 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Mon Organiseur Drive V33</title>
-  <link rel="stylesheet" href="style.css" />
+  <title>Mon Organiseur Drive V62</title>
+  <link rel="stylesheet" href="style.css?v=20260706-1325-v61-reconstruit" />
   <style>
     .syncbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px}.syncbar button{padding:8px 10px;border-radius:10px;border:1px solid #d9dde8;background:#fff;cursor:pointer}.syncbar .primary{background:#2563eb;color:#fff;border-color:#2563eb}.syncStatus{font-size:12px;color:#475569}.setupBox{background:#fff7ed;border:1px solid #fed7aa;padding:10px;border-radius:12px;margin-top:10px}.setupBox input{width:min(520px,100%);padding:8px;border:1px solid #ddd;border-radius:8px}.hiddenSetup{display:none}.cloudBadge{font-size:12px;background:#e0f2fe;color:#075985;padding:4px 8px;border-radius:999px}
   </style>
 </head>
 <body>
+<button id="globalBackBtn" class="globalBackBtn" type="button" title="Revenir à la page précédente" aria-label="Revenir à la page précédente">⬅ Retour</button>
   <aside class="sidebar">
-    <div class="brand"><div class="logo">O</div><div><strong>Mon Organiseur</strong><span>version Drive V33</span></div></div>
-    <button class="nav active" data-view="board">📋 Tableau</button>
+    <div class="brand"><div class="logo">O</div><div><strong>Mon Organiseur</strong><span>version Drive V62 · build 20260706-1345 · impression 1 page</span></div></div>
+    <button class="nav active" data-view="settings">⚙️ Drive</button>
+    <button class="nav" data-view="board">📋 Tableau</button>
     <button class="nav" data-view="list">☑️ Liste</button>
-    <button class="nav" data-view="calendar">📅 Échéances</button>
-    <button class="nav" data-view="stats">📊 Résumé</button>
+    <button class="nav" data-view="calendar">📅 Calendrier</button>
+    <button class="nav" data-view="assignees">👤 Responsable</button>
+    <button class="nav" data-view="companies">🏢 Entreprise</button>
+    <button class="nav" data-view="priorities">📌 Priorité</button>
+    <button class="nav" data-view="archived">📦 Tâches archivées</button>
+    <button class="nav" data-view="trash">🗑️ Corbeille</button>
     <hr>
     <button id="newPlanBtn" class="ghost">+ Nouveau plan</button>
     <div id="plansList" class="plans"></div>
@@ -26,63 +32,177 @@
   </aside>
 
   <main class="app">
-    <header class="topbar">
-      <div>
+    <div id="versionBanner" class="versionBanner">V62 · build 20260706-1345 · impression 1 page | 🔴 Drive déconnecté | 💾 Drive --</div>
+    <header class="topbar topbarCompact">
+      <div class="topIdentity">
         <input id="planTitle" class="planTitle" aria-label="Nom du plan">
         <p>Organiseur simple avec sauvegarde automatique Google Drive.</p>
-        <div class="syncbar no-print">
-          <button id="connectDriveBtn" class="primary">Se connecter à Google Drive</button>
-          <button id="loadDriveBtn">Charger depuis Drive</button>
-          <button id="saveDriveBtn">Sauvegarder maintenant</button>
-          <button id="disconnectDriveBtn">Déconnecter</button>
-          <span id="syncStatus" class="syncStatus">Drive non connecté</span>
-        </div>
-        <div id="setupBox" class="setupBox no-print">
-          <strong>Configuration Google</strong><br>
-          <small>Colle ici ton Client ID Google. Il est sauvegardé uniquement dans ton navigateur.</small><br>
-          <input id="googleClientId" placeholder="ex: 123456789-xxxx.apps.googleusercontent.com">
-          <button id="saveClientIdBtn">Enregistrer le Client ID</button>
-        </div>
       </div>
-      <div class="topActions no-print">
-        <input id="searchInput" placeholder="Rechercher...">
+      <div class="topActions topActionsCompact">
+        <input id="searchInput" class="searchCompact" placeholder="Rechercher...">
+        <button id="addAssigneeBtn" class="topMiniBtn">+ Responsable</button>
+        <button id="removeAssigneeBtn" class="topMiniBtn dangerMiniBtn">- Responsable</button>
+        <button id="addCompanyBtn" class="topMiniBtn">+ Entreprise</button>
+        <button id="removeCompanyBtn" class="topMiniBtn dangerMiniBtn">- Entreprise</button>
         <select id="filterStatus"><option value="all">Toutes</option><option value="todo">Non terminées</option><option value="done">Terminées</option><option value="late">En retard</option></select>
-        <select id="printSelect" class="printSelect" title="Choix d'impression">
-          <option value="">🖨️ Imprimer...</option>
-          <option value="current">Page actuelle</option>
-          <option value="board">Tableau principal</option>
-          <option value="list">Liste</option>
-          <option value="calendar">Échéances</option>
-          <option value="stats">Résumé</option>
-          <option value="all">Tout imprimer</option>
-        </select>
+        <button id="printOnePageBtn" class="topMiniBtn" type="button">🖨 1 page</button>
+        <button id="printCurrentBtn" class="topMiniBtn" type="button">🖨 Taille réelle</button>
+        <button id="printA3Btn" class="topMiniBtn" type="button">🖨 A3</button>
         <button id="addBucketBtn">+ Colonne</button>
         <button id="addTaskTopBtn" class="primary">+ Tâche</button>
       </div>
     </header>
 
-    <section id="boardView" class="view board print-section" data-print="board"></section>
-    <section id="listView" class="view hidden print-section" data-print="list"></section>
-    <section id="calendarView" class="view hidden print-section" data-print="calendar"></section>
-    <section id="statsView" class="view hidden print-section" data-print="stats"></section>
+    <section id="settingsView" class="view settingsPage">
+      <div class="settingsCard">
+        <h2>⚙️ Paramètres Google Drive</h2>
+        <p class="mutedLine">Cette page regroupe uniquement la connexion et la sauvegarde Google Drive. Les autres pages restent plus propres.</p>
+        <div class="syncbar settingsSyncbar">
+          <button id="connectDriveBtn" class="primary">Se connecter à Google Drive</button>
+          <button id="loadDriveBtn">Charger depuis Drive</button>
+          <button id="saveDriveBtn">Sauvegarder maintenant</button>
+          <button id="disconnectDriveBtn">Déconnecter</button>
+        </div>
+        <p id="syncStatus" class="syncStatus settingsStatus">Drive non connecté</p>
+        <div id="driveStatusPanel" class="driveStatusPanel">
+          <div class="driveStatusHeader"><strong id="driveStatusConnection">🔴 Déconnecté</strong><span id="driveStatusState" class="driveStateWarn">À synchroniser ⚠️</span></div>
+          <div class="driveStatusGrid">
+            <div><span>Dernière sauvegarde locale</span><strong id="driveStatusLocal">--</strong></div>
+            <div><span>Dernière sauvegarde Google Drive</span><strong id="driveStatusRemote">--</strong></div>
+            <div><span>Fichier Drive</span><strong id="driveStatusFile">--</strong></div>
+            <div><span>Connexion</span><strong id="driveStatusToken">Non vérifiée</strong></div>
+          </div>
+        </div>
+        <div id="setupBox" class="setupBox settingsSetupBox">
+          <strong>Configuration Google</strong><br>
+          <small>Colle ici ton Client ID Google. Il est sauvegardé uniquement dans ton navigateur.</small><br>
+          <div class="clientIdLine">
+            <input id="googleClientId" placeholder="ex: 123456789-xxxx.apps.googleusercontent.com">
+            <button id="saveClientIdBtn">Enregistrer le Client ID</button>
+          </div>
+        </div>
+
+        <div class="settingsHelp webOriginBox">
+          <h3>Adresse à autoriser dans Google Cloud</h3>
+          <p><strong>Origine JavaScript :</strong></p>
+          <code id="currentOriginText">--</code>
+          <p><strong>URI de redirection :</strong></p>
+          <code id="currentRedirectText">--</code>
+          <p class="small">V45 SAUVEGARDE PRO : connexion par fenêtre Google. Mets seulement l’origine JavaScript dans Google Cloud. Pas d’URI de redirection nécessaire.</p>
+        </div>
+        <div class="settingsHelp">
+          <h3>Utilisation simple</h3>
+          <p>1. Enregistre le Client ID si besoin.</p>
+          <p>2. Clique sur <strong>Se connecter à Google Drive</strong>.</p>
+          <p>3. Clique sur <strong>Charger depuis Drive</strong> pour récupérer tes données.</p>
+          <p>4. Le bandeau du haut indique la version, l’état Drive et la dernière sauvegarde.</p>
+        </div>
+      </div>
+    </section>
+    <section id="boardView" class="view board hidden"></section>
+    <section id="listView" class="view hidden"></section>
+    <section id="calendarView" class="view hidden"></section>
+    <section id="assigneesView" class="view hidden"></section>
+    <section id="companiesView" class="view hidden"></section>
+    <section id="prioritiesView" class="view hidden"></section>
+    <section id="archivedView" class="view hidden"></section>
+    <section id="trashView" class="view hidden"></section>
   </main>
 
   <dialog id="taskDialog">
     <form id="taskForm" method="dialog">
       <h2 id="dialogTitle">Nouvelle tâche</h2><input type="hidden" id="taskId">
-      <label>Titre<input id="taskTitle" required maxlength="100"></label>
-      <label>Colonne<select id="taskBucket"></select></label>
+      <label>Titre<textarea id="taskTitle" required maxlength="160" rows="1" placeholder="Titre de la tâche..."></textarea></label>
+      <div class="grid2"><label>Plan<select id="taskPlan"></select></label><label>Colonne<select id="taskBucket"></select></label></div>
       <label>Notes<textarea id="taskNotes" rows="4" placeholder="Détails de la tâche..."></textarea></label>
-      <div class="grid2"><label>Responsable<input id="taskAssignee" placeholder="Christophe, équipe, fournisseur..."></label><label>Échéance<input id="taskDueDate" type="date"></label></div>
+      <div class="grid2"><label>Responsable<select id="taskAssignee"></select></label><div class="taskCompanyField"><label>Entreprise<select id="taskCompany"></select></label><button type="button" id="taskCompanyActivityBtn" class="companyActivityBigBtn" title="Voir toutes les tâches et RDV de cette entreprise">📋 Activité</button></div></div>
+      <input id="taskDueDate" type="hidden">
+      <div class="grid2"><label>Date de début<input id="taskStartDate" type="date"></label><label>Date de fin<input id="taskEndDate" type="date"></label></div>
       <div class="grid2"><label>Priorité<select id="taskPriority"><option value="low">Basse</option><option value="normal">Normale</option><option value="high">Haute</option><option value="urgent">Urgente</option></select></label><label>Progression<select id="taskProgress"><option value="todo">Non commencé</option><option value="doing">En cours</option><option value="done">Terminé</option></select></label></div>
-      <label>Labels<input id="taskLabels" placeholder="ex: drone, achat, urgent"></label>
-      <label>Checklist <small>une ligne = une action</small><textarea id="taskChecklist" rows="4" placeholder="Commander les pièces\nVérifier la livraison\nTester"></textarea></label>
+      
+      <div class="grid2"><label>Nom du lien<input id="taskLinkName" placeholder="ex: Facture RoyalP"></label><label>URL du lien<input id="taskLinkUrl" placeholder="https://drive.google.com/..."></label></div>
+      <div class="taskDocumentPanel">
+        <h3>📎 Document de la tâche</h3>
+        <div class="grid2"><label>Nom du document<input id="taskDocumentDisplayName" placeholder="ex: Devis, photo, mail Outlook..."></label><label>Fichier<input id="taskDocumentFile" type="file"></label></div>
+        <div class="taskDocumentUploadLine"><button type="button" id="uploadTaskDocumentBtn">Envoyer sur Google Drive</button><span class="small">Dossier : ORGANISEUR_DOSSIERS</span></div>
+        <div id="taskDocumentBox" class="taskDocumentBox"><p class="small">Aucun document principal.</p></div>
+      </div>
       <menu><button type="button" id="deleteTaskBtn" class="danger">Supprimer</button><span></span><button type="button" id="cancelDialog">Annuler</button><button type="submit" class="primary">Enregistrer</button></menu>
     </form>
   </dialog>
 
-  <script async defer src="https://accounts.google.com/gsi/client"></script>
+
+
+  <dialog id="appointmentDialog">
+    <form id="appointmentForm" method="dialog">
+      <h2 id="appointmentDialogTitle">Nouveau RDV</h2>
+      <input type="hidden" id="appointmentId">
+      <label>Entreprise<select id="appointmentCompany"></select></label>
+      <div class="grid2"><label>Date<input id="appointmentDate" type="date" required></label><label>Heure<input id="appointmentTime" type="time"></label></div>
+      <label>Objet<input id="appointmentTitle" maxlength="120" placeholder="ex: réunion, contrôle, appel..."></label>
+      <label class="appointmentDoneLine"><input id="appointmentDone" type="checkbox"> RDV terminé / barré</label>
+      <label>Notes<textarea id="appointmentNotes" rows="3" placeholder="Détails du RDV..."></textarea></label>
+      <menu><button type="button" id="deleteAppointmentBtn" class="danger">Supprimer</button><span></span><button type="button" id="cancelAppointmentDialog">Annuler</button><button type="submit" class="primary">Enregistrer</button></menu>
+    </form>
+  </dialog>
+
+
+  <dialog id="companyInfoDialog" class="companyInfoDialog">
+    <form id="companyInfoForm" method="dialog">
+      <h2 id="companyInfoTitle">Fiche entreprise</h2>
+      <input type="hidden" id="companyInfoName">
+      <div class="companyTabs">
+        <button type="button" class="companyTab active" data-tab="general">📋 Général</button>
+        <button type="button" class="companyTab" data-tab="contacts">👤 Contacts</button>
+        <button type="button" class="companyTab" data-tab="notes">📝 Notes</button>
+      </div>
+      <section id="companyTabGeneral" class="companyTabPane">
+        <div class="companyImportLine"><button type="button" id="importGoogleContactBtn">🔎 Importer depuis Google Contacts</button><span class="small">Recherche avec le nom de l’entreprise.</span></div>
+        <div class="grid2"><label>Nom<input id="companyFieldName"></label><label>Téléphone<input id="companyPhone"></label></div>
+        <div class="grid2"><label>Mobile<input id="companyMobile"></label><label>E-mail<input id="companyEmail" type="email"></label></div>
+        <div class="grid2"><label>Site Internet<input id="companyWebsite" placeholder="https://..."></label><label>Pays<input id="companyCountry"></label></div>
+        <label>Adresse<input id="companyAddress"></label>
+        <div class="grid2"><label>NPA<input id="companyZip"></label><label>Ville<input id="companyCity"></label></div>
+        <div class="grid2"><label>TVA<input id="companyVat"></label><label>IDE<input id="companyIde"></label></div>
+        <div class="companyDocumentPanel">
+          <h3>📎 Document principal</h3>
+          <div class="grid2"><label>Nom du document<input id="companyDocumentDisplayName" placeholder="ex: Contrat de maintenance"></label><label>Fichier<input id="companyDocumentFile" type="file"></label></div>
+          <div class="companyDocumentUploadLine"><button type="button" id="uploadCompanyDocumentBtn">Envoyer sur Google Drive</button><span class="small">Dossier : ORGANISEUR_DOSSIERS</span></div>
+          <div id="companyDocumentBox" class="companyDocumentBox"><p class="small">Aucun document principal.</p></div>
+        </div>
+      </section>
+      <section id="companyTabContacts" class="companyTabPane hidden">
+        <div id="companyContactsList" class="companyContactsList"></div>
+        <button type="button" id="addCompanyContactBtn">+ Ajouter un contact</button>
+      </section>
+      <section id="companyTabNotes" class="companyTabPane hidden">
+        <label>Notes<textarea id="companyNotes" rows="8" placeholder="Procédures, codes, horaires, remarques..."></textarea></label>
+      </section>
+      <menu><button type="button" id="cancelCompanyInfoBtn">Annuler</button><span></span><button type="submit" class="primary">Enregistrer</button></menu>
+    </form>
+  </dialog>
+
+  <dialog id="deletePlanDialog">
+    <form method="dialog" class="deletePlanForm">
+      <h2>Supprimer le plan</h2>
+      <input type="hidden" id="deletePlanIndex">
+      <p>Tu vas supprimer le plan :</p>
+      <p class="deletePlanName"><strong id="deletePlanName"></strong></p>
+      <p class="warningText">Attention : toutes les colonnes et toutes les tâches de ce plan seront supprimées.</p>
+      <label class="confirmLine">
+        <input type="checkbox" id="confirmDeletePlanCheck">
+        Je confirme que je veux supprimer définitivement ce plan.
+      </label>
+      <menu>
+        <span></span><span></span>
+        <button type="button" id="cancelDeletePlanBtn">Annuler</button>
+        <button type="button" id="confirmDeletePlanBtn" class="dangerButton" disabled>Supprimer le plan</button>
+      </menu>
+    </form>
+  </dialog>
+
+  <script src="https://accounts.google.com/gsi/client"></script>
   <script src="https://apis.google.com/js/api.js"></script>
-  <script src="app.js"></script>
+  <script src="app.js?v=20260706-1325-v61-reconstruit"></script>
 </body>
 </html>
