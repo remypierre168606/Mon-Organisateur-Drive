@@ -1387,19 +1387,21 @@ body > #globalBackBtn.globalBackBtn:hover{transform:translateX(-2px)!important;f
 }
 
 
-/* V61 - impression contextuelle propre : imprime uniquement la vue affichée */
+/* V61 RECONSTRUITE DEPUIS V59 - Impression contextuelle propre */
 #printCurrentBtn{background:#f4f0ff!important;border-color:#ddd6fe!important;color:#4c1d95!important;font-weight:900!important}
 @media print{
   @page{size:auto;margin:10mm}
   html,body{background:#fff!important;color:#000!important;display:block!important;min-height:auto!important;width:auto!important;overflow:visible!important;font-size:11px!important}
-  .sidebar,.globalBackBtn,.versionBanner,.topActions,.nav,.ghost,.fileBtn,button:not(.taskLink):not(.taskDocLink),.bucketDeleteBtn,.addCard,.colDragHandle,.planDeleteBtn,dialog{display:none!important}
+  .sidebar,#globalBackBtn,.globalBackBtn,.versionBanner,.topActions,.nav,.ghost,.fileBtn,.addCard,.bucketDeleteBtn,.colDragHandle,.planDeleteBtn,dialog{display:none!important}
   .app{display:block!important;width:100%!important;max-width:none!important;margin:0!important;padding:0!important;background:#fff!important}
   .topbar,.topbarCompact{position:static!important;display:block!important;border:0!important;background:#fff!important;box-shadow:none!important;padding:0 0 8mm 0!important;margin:0!important}
+  .topActionsCompact{display:none!important}
   .topIdentity{display:block!important}.planTitle{border:0!important;background:transparent!important;color:#000!important;font-size:20px!important;font-weight:900!important;width:100%!important;padding:0!important}.topbar p{color:#444!important;margin:1mm 0 0!important}
-  .view{padding:0!important;margin:0!important;display:block!important;background:#fff!important;overflow:visible!important;height:auto!important;max-height:none!important}.view.hidden{display:none!important}
+  .view{padding:0!important;margin:0!important;background:#fff!important;overflow:visible!important;height:auto!important;max-height:none!important}.view.hidden{display:none!important}
   .board{display:flex!important;flex-wrap:wrap!important;gap:5mm!important;height:auto!important;overflow:visible!important;align-items:flex-start!important;padding:0!important}.board.hidden{display:none!important}
   .bucket{break-inside:avoid!important;page-break-inside:avoid!important;background:#fff!important;border:1px solid #aaa!important;box-shadow:none!important;width:68mm!important;min-width:68mm!important;max-height:none!important;border-radius:6px!important;overflow:visible!important}.bucketHead{padding:6px!important;border-bottom:1px solid #ddd!important}.bucketTitleInput{border:0!important;background:transparent!important;font-weight:900!important;padding:0!important;color:#000!important;resize:none!important}.cards{overflow:visible!important;padding:3mm!important}.card{break-inside:avoid!important;page-break-inside:avoid!important;box-shadow:none!important;border:1px solid #bbb!important;background:#fff!important;margin:0 0 3mm!important;color:#000!important}.card h3{color:#000!important}.pill{border:1px solid #bbb!important;background:#fff!important;color:#000!important}
-  .groupHeader,.detailHeader,.companyActivityHeader{break-inside:avoid!important;page-break-inside:avoid!important;background:#fff!important;border:1px solid #bbb!important;box-shadow:none!important;margin:0 0 4mm!important;padding:5mm!important;color:#000!important}.groupHeader h2,.detailHeader h2{color:#000!important;margin:0!important}
-  .companyActivityList,.groupList,.priorityList,.listTable,.calendarGrid,.calendarDayView{display:block!important;overflow:visible!important;height:auto!important;max-height:none!important}.companyActivityRow,.groupTask,.appointmentItem,.day,.stat,.taskrow{break-inside:avoid!important;page-break-inside:avoid!important;background:#fff!important;box-shadow:none!important;border:1px solid #bbb!important;color:#000!important;margin:0 0 3mm!important}.companyActivityMeta{color:#000!important}.small{color:#333!important}
+  .groupHeader,.detailHeader,.companyActivityHeader,.companyInfoPanel{break-inside:avoid!important;page-break-inside:avoid!important;background:#fff!important;border:1px solid #bbb!important;box-shadow:none!important;margin:0 0 4mm!important;padding:5mm!important;color:#000!important}.groupHeader h2,.detailHeader h2,.companyActivityHeader h2{color:#000!important;margin:0!important}
+  .companyActivityList,.groupList,.priorityList,.listTable,.calendarGrid,.calendarDayView{display:block!important;overflow:visible!important;height:auto!important;max-height:none!important}.companyActivityRow,.groupTask,.appointmentItem,.day,.stat,.taskrow{break-inside:avoid!important;page-break-inside:avoid!important;background:#fff!important;box-shadow:none!important;border:1px solid #bbb!important;color:#000!important;margin:0 0 3mm!important;padding:3mm!important}.companyActivityMeta{color:#000!important}.small{color:#333!important}
+  button,input,select,textarea{box-shadow:none!important}
   a{color:#000!important;text-decoration:underline!important}
 }

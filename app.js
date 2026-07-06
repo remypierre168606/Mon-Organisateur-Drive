@@ -447,6 +447,7 @@ function renderPlans(){
       if(e.target.closest('.planDeleteBtn')) return;
       pushNavigationState();
       db.activePlan=+el.dataset.i;
+      // V61 : un clic sur un plan ouvre toujours la version TABLEAU.
       view='board';
       currentDetailState=null;
       render();
@@ -1183,10 +1184,13 @@ $('confirmDeletePlanBtn').onclick=()=>{
   render();
 };
 
+
 function printCurrentPage(){
-  // V61 : impression contextuelle. On n'ouvre aucune autre vue, on ne recharge rien :
-  // le navigateur imprime simplement ce qui est actuellement affiché à l'écran.
+  // V61 : impression contextuelle. On ne change pas de vue et on ne recharge aucune liste.
+  // Le navigateur imprime uniquement la page/dossier/fiche actuellement visible.
   document.body.classList.add('printMode');
+  const title = (document.querySelector('#planTitle') && document.querySelector('#planTitle').value) || 'Mon Organiseur';
+  document.title = title + ' - impression V61';
   setTimeout(()=>window.print(), 60);
 }
 window.addEventListener('afterprint',()=>document.body.classList.remove('printMode'));
@@ -1625,8 +1629,8 @@ if($('companyInfoForm')){
 
 // ---------------- GOOGLE DRIVE SYNC ----------------
 
-const VERSION_LABEL = 'V59';
-const BUILD_LABEL = 'build 20260702-2124';
+const VERSION_LABEL = 'V61';
+const BUILD_LABEL = 'build 20260706-1325-reconstruit-depuis-V59';
 let driveConnectedForBanner = false;
 let lastSaveTimeForBanner = localStorage.getItem('mon-organiseur-last-save-time') || '--';
 let lastLocalSaveTimeForBanner = localStorage.getItem('mon-organiseur-last-local-save-time') || '--';

@@ -1,0 +1,3 @@
+V61 reconstruite depuis Mon-Organiseur-Drive-Web-v59.zip
+Build 20260706-1325
+Ce fichier permet de vérifier que ce ZIP n’est pas la V59.

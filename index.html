@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Mon Organiseur Drive V61</title>
-  <link rel="stylesheet" href="style.css?v=20260706-1318-v61" />
+  <link rel="stylesheet" href="style.css?v=20260706-1325-v61-reconstruit" />
   <style>
     .syncbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px}.syncbar button{padding:8px 10px;border-radius:10px;border:1px solid #d9dde8;background:#fff;cursor:pointer}.syncbar .primary{background:#2563eb;color:#fff;border-color:#2563eb}.syncStatus{font-size:12px;color:#475569}.setupBox{background:#fff7ed;border:1px solid #fed7aa;padding:10px;border-radius:12px;margin-top:10px}.setupBox input{width:min(520px,100%);padding:8px;border:1px solid #ddd;border-radius:8px}.hiddenSetup{display:none}.cloudBadge{font-size:12px;background:#e0f2fe;color:#075985;padding:4px 8px;border-radius:999px}
   </style>
@@ -12,7 +12,7 @@
 <body>
 <button id="globalBackBtn" class="globalBackBtn" type="button" title="Revenir à la page précédente" aria-label="Revenir à la page précédente">⬅ Retour</button>
   <aside class="sidebar">
-    <div class="brand"><div class="logo">O</div><div><strong>Mon Organiseur</strong><span>version Drive V61 · build 20260706-1318</span></div></div>
+    <div class="brand"><div class="logo">O</div><div><strong>Mon Organiseur</strong><span>version Drive V61 · build 20260706-1325 reconstruit depuis V59</span></div></div>
     <button class="nav active" data-view="settings">⚙️ Drive</button>
     <button class="nav" data-view="board">📋 Tableau</button>
     <button class="nav" data-view="list">☑️ Liste</button>
@@ -32,7 +32,7 @@
   </aside>
 
   <main class="app">
-    <div id="versionBanner" class="versionBanner">V61 · build 20260706-1318 | 🔴 Drive déconnecté | 💾 Drive --</div>
+    <div id="versionBanner" class="versionBanner">V61 · build 20260706-1325 reconstruit depuis V59 | 🔴 Drive déconnecté | 💾 Drive --</div>
     <header class="topbar topbarCompact">
       <div class="topIdentity">
         <input id="planTitle" class="planTitle" aria-label="Nom du plan">
@@ -45,7 +45,7 @@
         <button id="addCompanyBtn" class="topMiniBtn">+ Entreprise</button>
         <button id="removeCompanyBtn" class="topMiniBtn dangerMiniBtn">- Entreprise</button>
         <select id="filterStatus"><option value="all">Toutes</option><option value="todo">Non terminées</option><option value="done">Terminées</option><option value="late">En retard</option></select>
-        <button id="printCurrentBtn" class="topMiniBtn" type="button">🖨 Imprimer</button>
+        <button id="printCurrentBtn" class="topMiniBtn" type="button">🖨 Imprimer cette page</button>
         <button id="addBucketBtn">+ Colonne</button>
         <button id="addTaskTopBtn" class="primary">+ Tâche</button>
       </div>
@@ -201,6 +201,6 @@
 
   <script src="https://accounts.google.com/gsi/client"></script>
   <script src="https://apis.google.com/js/api.js"></script>
-  <script src="app.js?v=20260706-1318-v61"></script>
+  <script src="app.js?v=20260706-1325-v61-reconstruit"></script>
 </body>
 </html>

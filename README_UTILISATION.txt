@@ -1,3 +1,11 @@
+Mon Organiseur Drive V61 - RECONSTRUIT DEPUIS V59
+Build 20260706-1325
+
+Corrections V61 :
+- Bouton 🖨 Imprimer cette page : imprime la page actuellement affichée sans recharger la liste principale.
+- Les fiches entreprise / activités entreprise s’impriment seules.
+- Un clic sur un plan ouvre toujours la vue Tableau.
+
 MON ORGANISEUR DRIVE WEB - V56.3 STABLE
 Build 20260702-2030
 
