@@ -1386,7 +1386,7 @@ body > #globalBackBtn.globalBackBtn:hover{transform:translateX(-2px)!important;f
   .sidebar{padding-top:58px!important;}
 }
 
-/* V60 - Impression propre de la page affichée */
+/* V61 - Impression contextuelle : imprime uniquement la vue affichée, sans rechargement */
 .printBtn{white-space:nowrap}
 @media print{
   @page{size:A4 landscape;margin:10mm;}
