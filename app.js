@@ -447,6 +447,7 @@ function renderPlans(){
       if(e.target.closest('.planDeleteBtn')) return;
       pushNavigationState();
       db.activePlan=+el.dataset.i;
+      view='board';
       currentDetailState=null;
       render();
     };
@@ -1181,7 +1182,7 @@ $('confirmDeletePlanBtn').onclick=()=>{
   $('deletePlanDialog').close();
   render();
 };
-$('planTitle').onchange=e=>{plan().title=e.target.value;render()};$('addBucketBtn').onclick=()=>{const title=prompt('Nom de la colonne ?','Nouvelle colonne');if(title){plan().buckets.push({id:uid(),title,tasks:[]});render()}};$('addTaskTopBtn').onclick=()=>openTask(null,plan().buckets[0].id);$('newPlanBtn').onclick=()=>{const title=prompt('Nom du nouveau plan ?','Nouveau plan');if(title){pushNavigationState();db.plans.push({id:uid(),title,buckets:[{id:uid(),title:'À faire',tasks:[]},{id:uid(),title:'En cours',tasks:[]},{id:uid(),title:'Terminé',tasks:[]}]});db.activePlan=db.plans.length-1;currentDetailState=null;render()}};document.querySelectorAll('.nav').forEach(n=>n.onclick=()=>navigateToView(n.dataset.view));if($('globalBackBtn')) $('globalBackBtn').onclick=goPreviousPage;$('searchInput').oninput=render;$('filterStatus').onchange=render;$('exportBtn').onclick=()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(db,null,2)],{type:'application/json'}));a.download='mon-organiseur-sauvegarde.json';a.click()};$('importInput').onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{db=JSON.parse(r.result);render()}catch{alert('Fichier non valide')}};r.readAsText(f)};$('resetBtn').onclick=()=>{if(confirm('Tout effacer et remettre le modèle de départ ?')){db=starter();render()}};
+$('planTitle').onchange=e=>{plan().title=e.target.value;render()};if($('printPlanBtn')) $('printPlanBtn').onclick=()=>{view='board';currentDetailState=null;render();setTimeout(()=>window.print(),80);};$('addBucketBtn').onclick=()=>{const title=prompt('Nom de la colonne ?','Nouvelle colonne');if(title){plan().buckets.push({id:uid(),title,tasks:[]});render()}};$('addTaskTopBtn').onclick=()=>openTask(null,plan().buckets[0].id);$('newPlanBtn').onclick=()=>{const title=prompt('Nom du nouveau plan ?','Nouveau plan');if(title){pushNavigationState();db.plans.push({id:uid(),title,buckets:[{id:uid(),title:'À faire',tasks:[]},{id:uid(),title:'En cours',tasks:[]},{id:uid(),title:'Terminé',tasks:[]}]});db.activePlan=db.plans.length-1;view='board';currentDetailState=null;render()}};document.querySelectorAll('.nav').forEach(n=>n.onclick=()=>navigateToView(n.dataset.view));if($('globalBackBtn')) $('globalBackBtn').onclick=goPreviousPage;$('searchInput').oninput=render;$('filterStatus').onchange=render;$('exportBtn').onclick=()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(db,null,2)],{type:'application/json'}));a.download='mon-organiseur-sauvegarde.json';a.click()};$('importInput').onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{db=JSON.parse(r.result);render()}catch{alert('Fichier non valide')}};r.readAsText(f)};$('resetBtn').onclick=()=>{if(confirm('Tout effacer et remettre le modèle de départ ?')){db=starter();render()}};
 
 
 
@@ -1615,8 +1616,8 @@ if($('companyInfoForm')){
 
 // ---------------- GOOGLE DRIVE SYNC ----------------
 
-const VERSION_LABEL = 'V59';
-const BUILD_LABEL = 'build 20260702-2124';
+const VERSION_LABEL = 'V60';
+const BUILD_LABEL = 'build 20260706-1210';
 let driveConnectedForBanner = false;
 let lastSaveTimeForBanner = localStorage.getItem('mon-organiseur-last-save-time') || '--';
 let lastLocalSaveTimeForBanner = localStorage.getItem('mon-organiseur-last-local-save-time') || '--';
