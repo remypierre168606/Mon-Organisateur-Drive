@@ -1185,17 +1185,23 @@ $('confirmDeletePlanBtn').onclick=()=>{
 };
 
 
-function printCurrentPage(){
-  // V61 : impression contextuelle. On ne change pas de vue et on ne recharge aucune liste.
-  // Le navigateur imprime uniquement la page/dossier/fiche actuellement visible.
+function preparePrintMode(mode){
+  // V62 : impression contextuelle, sans changer de page.
+  // mode = normal / onepage / a3
+  document.body.classList.remove('printOnePage','printA3');
   document.body.classList.add('printMode');
+  if(mode==='onepage') document.body.classList.add('printOnePage');
+  if(mode==='a3') document.body.classList.add('printA3');
   const title = (document.querySelector('#planTitle') && document.querySelector('#planTitle').value) || 'Mon Organiseur';
-  document.title = title + ' - impression V61';
-  setTimeout(()=>window.print(), 60);
+  document.title = title + ' - impression V62';
+  setTimeout(()=>window.print(), 80);
 }
-window.addEventListener('afterprint',()=>document.body.classList.remove('printMode'));
+function printCurrentPage(){ preparePrintMode('normal'); }
+function printOnePage(){ preparePrintMode('onepage'); }
+function printA3Page(){ preparePrintMode('a3'); }
+window.addEventListener('afterprint',()=>document.body.classList.remove('printMode','printOnePage','printA3'));
 
-$('planTitle').onchange=e=>{plan().title=e.target.value;render()};$('addBucketBtn').onclick=()=>{const title=prompt('Nom de la colonne ?','Nouvelle colonne');if(title){plan().buckets.push({id:uid(),title,tasks:[]});render()}};$('addTaskTopBtn').onclick=()=>openTask(null,plan().buckets[0].id);$('newPlanBtn').onclick=()=>{const title=prompt('Nom du nouveau plan ?','Nouveau plan');if(title){pushNavigationState();db.plans.push({id:uid(),title,buckets:[{id:uid(),title:'À faire',tasks:[]},{id:uid(),title:'En cours',tasks:[]},{id:uid(),title:'Terminé',tasks:[]}]});db.activePlan=db.plans.length-1;view='board';currentDetailState=null;render()}};document.querySelectorAll('.nav').forEach(n=>n.onclick=()=>navigateToView(n.dataset.view));if($('globalBackBtn')) $('globalBackBtn').onclick=goPreviousPage;if($('printCurrentBtn')) $('printCurrentBtn').onclick=printCurrentPage;$('searchInput').oninput=render;$('filterStatus').onchange=render;$('exportBtn').onclick=()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(db,null,2)],{type:'application/json'}));a.download='mon-organiseur-sauvegarde.json';a.click()};$('importInput').onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{db=JSON.parse(r.result);render()}catch{alert('Fichier non valide')}};r.readAsText(f)};$('resetBtn').onclick=()=>{if(confirm('Tout effacer et remettre le modèle de départ ?')){db=starter();render()}};
+$('planTitle').onchange=e=>{plan().title=e.target.value;render()};$('addBucketBtn').onclick=()=>{const title=prompt('Nom de la colonne ?','Nouvelle colonne');if(title){plan().buckets.push({id:uid(),title,tasks:[]});render()}};$('addTaskTopBtn').onclick=()=>openTask(null,plan().buckets[0].id);$('newPlanBtn').onclick=()=>{const title=prompt('Nom du nouveau plan ?','Nouveau plan');if(title){pushNavigationState();db.plans.push({id:uid(),title,buckets:[{id:uid(),title:'À faire',tasks:[]},{id:uid(),title:'En cours',tasks:[]},{id:uid(),title:'Terminé',tasks:[]}]});db.activePlan=db.plans.length-1;view='board';currentDetailState=null;render()}};document.querySelectorAll('.nav').forEach(n=>n.onclick=()=>navigateToView(n.dataset.view));if($('globalBackBtn')) $('globalBackBtn').onclick=goPreviousPage;if($('printCurrentBtn')) $('printCurrentBtn').onclick=printCurrentPage;if($('printOnePageBtn')) $('printOnePageBtn').onclick=printOnePage;if($('printA3Btn')) $('printA3Btn').onclick=printA3Page;$('searchInput').oninput=render;$('filterStatus').onchange=render;$('exportBtn').onclick=()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(db,null,2)],{type:'application/json'}));a.download='mon-organiseur-sauvegarde.json';a.click()};$('importInput').onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{db=JSON.parse(r.result);render()}catch{alert('Fichier non valide')}};r.readAsText(f)};$('resetBtn').onclick=()=>{if(confirm('Tout effacer et remettre le modèle de départ ?')){db=starter();render()}};
 
 
 
@@ -1629,7 +1635,7 @@ if($('companyInfoForm')){
 
 // ---------------- GOOGLE DRIVE SYNC ----------------
 
-const VERSION_LABEL = 'V61';
+const VERSION_LABEL = 'V62';
 const BUILD_LABEL = 'build 20260706-1325-reconstruit-depuis-V59';
 let driveConnectedForBanner = false;
 let lastSaveTimeForBanner = localStorage.getItem('mon-organiseur-last-save-time') || '--';

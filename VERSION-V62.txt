@@ -1,0 +1,4 @@
+V62 reconstruite depuis V59/V61
+Corrections : impression contextuelle + boutons Imprimer 1 page, Taille réelle, A3.
+Les plans s ouvrent toujours en Tableau.
+Build 20260706-1345

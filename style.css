@@ -1387,8 +1387,8 @@ body > #globalBackBtn.globalBackBtn:hover{transform:translateX(-2px)!important;f
 }
 
 
-/* V61 RECONSTRUITE DEPUIS V59 - Impression contextuelle propre */
-#printCurrentBtn{background:#f4f0ff!important;border-color:#ddd6fe!important;color:#4c1d95!important;font-weight:900!important}
+/* V62 - Impression contextuelle avec option 1 page / A3 */
+#printCurrentBtn,#printOnePageBtn,#printA3Btn{background:#f4f0ff!important;border-color:#ddd6fe!important;color:#4c1d95!important;font-weight:900!important}
 @media print{
   @page{size:auto;margin:10mm}
   html,body{background:#fff!important;color:#000!important;display:block!important;min-height:auto!important;width:auto!important;overflow:visible!important;font-size:11px!important}
@@ -1404,4 +1404,32 @@ body > #globalBackBtn.globalBackBtn:hover{transform:translateX(-2px)!important;f
   .companyActivityList,.groupList,.priorityList,.listTable,.calendarGrid,.calendarDayView{display:block!important;overflow:visible!important;height:auto!important;max-height:none!important}.companyActivityRow,.groupTask,.appointmentItem,.day,.stat,.taskrow{break-inside:avoid!important;page-break-inside:avoid!important;background:#fff!important;box-shadow:none!important;border:1px solid #bbb!important;color:#000!important;margin:0 0 3mm!important;padding:3mm!important}.companyActivityMeta{color:#000!important}.small{color:#333!important}
   button,input,select,textarea{box-shadow:none!important}
   a{color:#000!important;text-decoration:underline!important}
+}
+
+
+/* V62 - Options d'impression */
+@media print{
+  body.printOnePage @page{size:A4 landscape;margin:4mm}
+  body.printA3 @page{size:A3 landscape;margin:8mm}
+  body.printOnePage .topbar, body.printOnePage .topbarCompact{padding:0 0 3mm 0!important}
+  body.printOnePage .planTitle{font-size:14px!important;line-height:1.1!important}
+  body.printOnePage .topbar p{font-size:9px!important;margin:0!important}
+  body.printOnePage .app{zoom:.54!important;transform-origin:top left!important}
+  body.printOnePage .view{width:185%!important;max-width:none!important}
+  body.printOnePage .board{display:flex!important;flex-wrap:nowrap!important;gap:3mm!important;align-items:flex-start!important;overflow:visible!important;width:max-content!important;max-width:none!important}
+  body.printOnePage .bucket{width:52mm!important;min-width:52mm!important;border-radius:4px!important}
+  body.printOnePage .bucketHead{padding:3px 5px!important}
+  body.printOnePage .bucketTitleInput{font-size:10px!important;line-height:1.1!important}
+  body.printOnePage .count{font-size:8px!important;padding:1px 4px!important}
+  body.printOnePage .cards{padding:1.5mm!important}
+  body.printOnePage .card{padding:5px!important;margin:0 0 1.5mm!important;border-radius:4px!important;font-size:9px!important;line-height:1.15!important}
+  body.printOnePage .card h3{font-size:10px!important;margin:0 0 3px!important;line-height:1.1!important}
+  body.printOnePage .pill{font-size:8px!important;padding:1px 4px!important}
+  body.printOnePage .small,.taskLinksPreview,.taskDocPreview{font-size:8px!important;margin-top:2px!important}
+  body.printOnePage .listTable, body.printOnePage .groupList, body.printOnePage .companyActivityList, body.printOnePage .priorityList{font-size:9px!important;line-height:1.12!important}
+  body.printOnePage .companyActivityRow, body.printOnePage .groupTask, body.printOnePage .appointmentItem, body.printOnePage .day, body.printOnePage .stat, body.printOnePage .taskrow{padding:2mm!important;margin:0 0 1.5mm!important}
+  body.printOnePage .groupHeader, body.printOnePage .detailHeader, body.printOnePage .companyActivityHeader, body.printOnePage .companyInfoPanel{padding:3mm!important;margin:0 0 2mm!important}
+  body.printA3 .app{zoom:.82!important;transform-origin:top left!important}
+  body.printA3 .board{flex-wrap:nowrap!important;gap:4mm!important;width:max-content!important;overflow:visible!important}
+  body.printA3 .bucket{width:62mm!important;min-width:62mm!important}
 }

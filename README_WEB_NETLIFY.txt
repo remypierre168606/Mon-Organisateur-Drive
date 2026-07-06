@@ -1,3 +1,12 @@
+Mon Organiseur Drive V62 - Impression 1 page
+
+Corrections V62 :
+- Nouveau bouton 🖨 1 page pour compresser la vue courante sur une page A4 paysage quand c est possible.
+- Bouton 🖨 Taille réelle pour imprimer sans compression.
+- Bouton 🖨 A3 pour les grands tableaux.
+- Impression contextuelle : ne change pas de page, ne recharge pas la liste complète.
+- Les plans s ouvrent toujours en vue Tableau.
+
 Mon Organiseur Drive V61 - RECONSTRUIT DEPUIS V59
 Build 20260706-1325
 
