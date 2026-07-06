@@ -1433,3 +1433,39 @@ body > #globalBackBtn.globalBackBtn:hover{transform:translateX(-2px)!important;f
   body.printA3 .board{flex-wrap:nowrap!important;gap:4mm!important;width:max-content!important;overflow:visible!important}
   body.printA3 .bucket{width:62mm!important;min-width:62mm!important}
 }
+
+/* V64 - Impression propre : aucun menu ni en-tête inutile sur toutes les pages */
+@media print{
+  @page{margin:6mm!important;}
+  html,body{background:#fff!important;color:#000!important;display:block!important;width:auto!important;min-height:auto!important;overflow:visible!important;font-size:10px!important;}
+  .sidebar,.versionBanner,#globalBackBtn,.globalBackBtn,.topbar,.topbarCompact,.topIdentity,.topActions,.topActionsCompact,#searchInput,#filterStatus,#printMenu,#addAssigneeBtn,#removeAssigneeBtn,#addCompanyBtn,#removeCompanyBtn,#addBucketBtn,#addTaskTopBtn,.nav,.ghost,.fileBtn,.addCard,.bucketDeleteBtn,.planDeleteBtn,.colDragHandle,.openPriorityBtn,.openCompanyActivityBtn,.inlineCompanyActivityBtn,.inlineCompanyInfoBtn,.companyInfoOpenBtn,.editAppointmentBtn,.appointmentDot,.calAdd,.calAddRdv,dialog{display:none!important;}
+  .groupHeader,.detailHeader,.companyActivityHeader,.companyInfoHeader,.settingsCard > h2,.settingsCard > p,.mutedLine{display:none!important;}
+  .app{display:block!important;width:100%!important;max-width:none!important;margin:0!important;padding:0!important;background:#fff!important;}
+  .view{display:block!important;padding:0!important;margin:0!important;background:#fff!important;overflow:visible!important;height:auto!important;max-height:none!important;}
+  .view.hidden{display:none!important;}
+  .board{display:flex!important;flex-wrap:wrap!important;gap:3mm!important;height:auto!important;overflow:visible!important;align-items:flex-start!important;padding:0!important;margin:0!important;}
+  .bucket{break-inside:avoid!important;page-break-inside:avoid!important;background:#fff!important;border:1px solid #999!important;box-shadow:none!important;width:62mm!important;min-width:62mm!important;max-height:none!important;border-radius:4px!important;overflow:visible!important;}
+  .bucketHead{padding:3px 5px!important;border-bottom:1px solid #ddd!important;}
+  .bucketTitleInput{border:0!important;background:transparent!important;font-weight:900!important;padding:0!important;color:#000!important;font-size:10px!important;}
+  .count{font-size:8px!important;padding:1px 4px!important;}
+  .cards{overflow:visible!important;padding:2mm!important;}
+  .card{break-inside:avoid!important;page-break-inside:avoid!important;box-shadow:none!important;border:1px solid #aaa!important;background:#fff!important;margin:0 0 2mm!important;padding:2mm!important;color:#000!important;border-radius:4px!important;font-size:9px!important;line-height:1.15!important;}
+  .card h3{color:#000!important;font-size:10px!important;margin:0 0 2px!important;line-height:1.1!important;}
+  .pill{border:1px solid #aaa!important;background:#fff!important;color:#000!important;font-size:8px!important;padding:1px 3px!important;}
+  .small,.taskLinksPreview,.taskDocPreview{color:#333!important;font-size:8px!important;margin-top:1mm!important;}
+  .companyActivityList,.groupList,.priorityList,.listTable,.calendarGrid,.calendarDayView,.statsGrid{display:block!important;overflow:visible!important;height:auto!important;max-height:none!important;margin:0!important;padding:0!important;}
+  .companyActivityRow,.groupTask,.appointmentItem,.day,.stat,tr.taskrow{break-inside:avoid!important;page-break-inside:avoid!important;background:#fff!important;box-shadow:none!important;border:1px solid #aaa!important;color:#000!important;margin:0 0 2mm!important;padding:2mm!important;border-radius:4px!important;}
+  .companyActivityMeta,.groupMeta{color:#000!important;font-size:8px!important;}
+  button,input,select,textarea{box-shadow:none!important;}
+  a{color:#000!important;text-decoration:underline!important;}
+  body.printOnePage .app{zoom:.58!important;transform-origin:top left!important;}
+  body.printOnePage .view{width:172%!important;max-width:none!important;}
+  body.printOnePage .board{flex-wrap:nowrap!important;gap:2mm!important;width:max-content!important;}
+  body.printOnePage .bucket{width:48mm!important;min-width:48mm!important;}
+  body.printOnePage .card{font-size:8px!important;padding:1.5mm!important;margin-bottom:1mm!important;}
+  body.printOnePage .card h3{font-size:9px!important;}
+  body.printOnePage .companyActivityRow,body.printOnePage .groupTask,body.printOnePage .appointmentItem,body.printOnePage .day,body.printOnePage .stat,body.printOnePage tr.taskrow{padding:1.5mm!important;margin-bottom:1mm!important;}
+  body.printA3 .app{zoom:.82!important;transform-origin:top left!important;}
+  body.printA3 .board{flex-wrap:nowrap!important;gap:3mm!important;width:max-content!important;}
+  body.printA3 .bucket{width:58mm!important;min-width:58mm!important;}
+}

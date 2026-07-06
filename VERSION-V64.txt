@@ -1,0 +1,10 @@
+Mon Organiseur Drive Web - V64
+Build 20260706-1925
+
+Modifications V64 :
+- Impression propre sur toutes les pages.
+- Masquage de la barre du haut à l'impression.
+- Masquage du titre du plan, sous-titre, recherche, boutons, filtres, version, Drive connecté et heure.
+- Masquage des grands panneaux d'en-tête de vue pour gagner de la place.
+- Conservation du menu déroulant d'impression : 1 page, Taille réelle, A3 paysage.
+- L'impression reste contextuelle : elle imprime la page ou le dossier affiché sans changer de vue.

@@ -1186,14 +1186,14 @@ $('confirmDeletePlanBtn').onclick=()=>{
 
 
 function preparePrintMode(mode){
-  // V63 : impression contextuelle via menu déroulant, sans changer de page.
+  // V64 : impression contextuelle via menu déroulant, sans changer de page.
   // mode = normal / onepage / a3
   document.body.classList.remove('printOnePage','printA3');
   document.body.classList.add('printMode');
   if(mode==='onepage') document.body.classList.add('printOnePage');
   if(mode==='a3') document.body.classList.add('printA3');
   const title = (document.querySelector('#planTitle') && document.querySelector('#planTitle').value) || 'Mon Organiseur';
-  document.title = title + ' - impression V63';
+  document.title = title + ' - impression V64';
   setTimeout(()=>window.print(), 80);
 }
 function printCurrentPage(){ preparePrintMode('normal'); }
@@ -1635,7 +1635,7 @@ if($('companyInfoForm')){
 
 // ---------------- GOOGLE DRIVE SYNC ----------------
 
-const VERSION_LABEL = 'V63';
+const VERSION_LABEL = 'V64';
 const BUILD_LABEL = 'build 20260706-1325-reconstruit-depuis-V59';
 let driveConnectedForBanner = false;
 let lastSaveTimeForBanner = localStorage.getItem('mon-organiseur-last-save-time') || '--';
