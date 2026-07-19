@@ -10,6 +10,7 @@ let calendarCursor=new Date();
 calendarCursor.setDate(1);
 let calendarMode='week';
 let calendarRdvOnly = localStorage.getItem('mon-organiseur-calendar-rdv-only') === '1';
+let calendarDialogReturnState = null;
 let listFilterUrgent=false;
 let listFilterHigh=false;
 
@@ -366,12 +367,21 @@ function appointmentLabel(a){
 }
 function openAppointmentDialog(id='', date=''){
   ensurePlanData();
+  if(view==='calendar') calendarDialogReturnState={view:'calendar',mode:calendarMode,cursor:new Date(calendarCursor)};
   const existing=id?appointments().find(a=>a.id===id):null;
   $('appointmentDialogTitle').textContent=existing?'Modifier le RDV':'Nouveau RDV';
   $('appointmentId').value=existing?.id||'';
   $('appointmentCompany').innerHTML=appointmentCompanyOptions(existing?.company||'');
   $('appointmentDate').value=existing?.date||date||dateKey(calendarCursor)||today();
   $('appointmentTime').value=existing?.time||'';
+  const recurrenceSelect=$('appointmentRecurrence');
+  const recurrenceEnd=$('appointmentRecurrenceEnd');
+  if(recurrenceSelect) recurrenceSelect.value=existing?.recurrence?.frequency||'none';
+  if(recurrenceEnd) recurrenceEnd.value=existing?.recurrence?.endDate||'';
+  if(recurrenceSelect) recurrenceSelect.disabled=!!existing;
+  if(recurrenceEnd) recurrenceEnd.disabled=!!existing;
+  const recurrenceHelp=$('appointmentRecurrenceHelp');
+  if(recurrenceHelp) recurrenceHelp.textContent=existing&&existing.recurrenceGroupId?'Cette occurrence appartient à une série. La modification concerne uniquement ce RDV.':'Pour une récurrence, choisis une date de fin.';
   $('appointmentTitle').value=existing?.title||'';
   const doneBox=$('appointmentDone');
   if(doneBox) doneBox.checked=!!existing?.done;
@@ -1056,6 +1066,7 @@ function findTaskGlobalIn(data,id){
   return {};
 }
 function openTask(id,bid){
+  if(view==='calendar') calendarDialogReturnState={view:'calendar',mode:calendarMode,cursor:new Date(calendarCursor)};
   const found=id?findTaskGlobal(id):{};
   const t=found.t, b=found.b;
   $('dialogTitle').textContent=id?'Modifier la tâche':'Nouvelle tâche';
@@ -1101,16 +1112,46 @@ function checklistFrom(txt){return txt.split('\n').map(s=>s.trim()).filter(Boole
 $('appointmentForm').onsubmit=e=>{
   e.preventDefault();
   ensurePlanData();
-  const id=$('appointmentId').value||uid();
-  const a={id,company:$('appointmentCompany').value.trim(),date:$('appointmentDate').value,time:$('appointmentTime').value,title:$('appointmentTitle').value.trim(),notes:$('appointmentNotes').value.trim(),done:!!($('appointmentDone')&&$('appointmentDone').checked),color:'violet',rdvActive:true,updatedAt:new Date().toISOString()};
-  if(!a.company){ alert('Choisis une entreprise pour le RDV.'); return; }
-  if(!a.date){ alert('Choisis une date pour le RDV.'); return; }
+  const existingId=$('appointmentId').value;
+  const id=existingId||uid();
+  const frequency=$('appointmentRecurrence')?.value||'none';
+  const recurrenceEnd=$('appointmentRecurrenceEnd')?.value||'';
+  const base={id,company:$('appointmentCompany').value.trim(),date:$('appointmentDate').value,time:$('appointmentTime').value,title:$('appointmentTitle').value.trim(),notes:$('appointmentNotes').value.trim(),done:!!($('appointmentDone')&&$('appointmentDone').checked),color:'violet',rdvActive:true,updatedAt:new Date().toISOString()};
+  if(!base.company){ alert('Choisis une entreprise pour le RDV.'); return; }
+  if(!base.date){ alert('Choisis une date pour le RDV.'); return; }
+  if(!existingId && frequency!=='none' && !recurrenceEnd){ alert('Choisis une date de fin pour la récurrence.'); return; }
+  if(!existingId && frequency!=='none' && recurrenceEnd<base.date){ alert('La date de fin de récurrence doit être après la date du premier RDV.'); return; }
+
   db.appointments=db.appointments.filter(x=>x.id!==id);
-  db.appointments.push(a);
+  if(existingId || frequency==='none'){
+    const previous=appointments().find(x=>x.id===existingId);
+    db.appointments.push({...base,recurrence:previous?.recurrence||null,recurrenceGroupId:previous?.recurrenceGroupId||null});
+  }else{
+    const groupId=uid();
+    const dates=[];
+    let current=new Date(base.date+'T12:00:00');
+    const limit=new Date(recurrenceEnd+'T12:00:00');
+    let guard=0;
+    while(current<=limit && guard<500){
+      dates.push(dateKey(current));
+      const before=current.getTime();
+      if(frequency==='daily') current.setDate(current.getDate()+1);
+      else if(frequency==='weekly') current.setDate(current.getDate()+7);
+      else if(frequency==='monthly') current.setMonth(current.getMonth()+1);
+      else if(frequency==='yearly') current.setFullYear(current.getFullYear()+1);
+      if(current.getTime()===before) break;
+      guard++;
+    }
+    dates.forEach((date,index)=>db.appointments.push({...base,id:index===0?id:uid(),date,recurrence:{frequency,endDate:recurrenceEnd},recurrenceGroupId:groupId,recurrenceIndex:index}));
+  }
   $('appointmentDialog').close();
-  calendarMode='day';
-  setCalendarDate(a.date);
-  view='calendar';
+  if(calendarDialogReturnState){
+    view='calendar';
+    calendarMode=calendarDialogReturnState.mode;
+    calendarCursor=new Date(calendarDialogReturnState.cursor);
+    calendarDialogReturnState=null;
+  }
+  save();
   render();
 };
 $('cancelAppointmentDialog').onclick=()=>$('appointmentDialog').close();
@@ -1164,6 +1205,12 @@ $('taskForm').onsubmit=async e=>{
         db.activePlan=targetPlanIndex;
       }
       $('taskDialog').close();
+      if(calendarDialogReturnState){
+        view='calendar';
+        calendarMode=calendarDialogReturnState.mode;
+        calendarCursor=new Date(calendarDialogReturnState.cursor);
+        calendarDialogReturnState=null;
+      }
     }, expectedTotal);
   }catch(err){
     if(String(err.message||err)!=='Envoi du document annulé') console.warn('Enregistrement tâche annulé', err);
@@ -1186,7 +1233,7 @@ $('confirmDeletePlanBtn').onclick=()=>{
 
 
 function preparePrintMode(mode){
-  // V65 : moteur d'impression isolé.
+  // V66 : moteur d'impression isolé.
   // On imprime uniquement la vue actuellement visible, dans un document temporaire.
   // Cela évite d'imprimer les pages précédentes/parasites (liste entreprises + fiche, etc.).
   const activeView = document.querySelector('.view:not(.hidden)') || document.querySelector('#boardView') || document.body;
@@ -1208,7 +1255,7 @@ function preparePrintMode(mode){
   const doc = frame.contentWindow.document;
   const styleHref = 'style.css?v=20260706-1935-v65';
   doc.open();
-  doc.write(`<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>${esc(title)} - impression V65</title><link rel="stylesheet" href="${styleHref}"><style>
+  doc.write(`<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>${esc(title)} - impression V66</title><link rel="stylesheet" href="${styleHref}"><style>
     @page{size:A4 landscape;margin:6mm;}
     html,body{background:#fff!important;margin:0!important;padding:0!important;color:#111827!important;}
     body{font-family:Arial,Helvetica,sans-serif!important;}
@@ -1679,7 +1726,7 @@ if($('companyInfoForm')){
 
 // ---------------- GOOGLE DRIVE SYNC ----------------
 
-const VERSION_LABEL = 'V65';
+const VERSION_LABEL = 'V66';
 const BUILD_LABEL = 'build 20260706-1325-reconstruit-depuis-V59';
 let driveConnectedForBanner = false;
 let lastSaveTimeForBanner = localStorage.getItem('mon-organiseur-last-save-time') || '--';

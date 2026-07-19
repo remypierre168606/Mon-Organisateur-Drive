@@ -1,0 +1,6 @@
+MON ORGANISEUR DRIVE — V66
+
+Modifications :
+- Depuis le calendrier en vue Mois ou Semaine, l'ouverture puis l'enregistrement d'une tâche ou d'un RDV conserve la même vue et la même période.
+- Ajout d'une récurrence lors de la création d'un RDV : quotidienne, hebdomadaire, mensuelle ou annuelle, avec date de fin.
+- La modification d'une occurrence récurrente ne modifie que cette occurrence.
