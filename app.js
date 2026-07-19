@@ -365,6 +365,32 @@ function appointmentLabel(a){
   const done=a.done?'☑ ':'';
   return `🟣${done}${time} ${esc(a.company||'RDV')}${title}`;
 }
+function recurrenceStartDate(dateStr, rule='selected', weekday=1){
+  if(!dateStr || rule==='selected') return dateStr;
+  const source=new Date(dateStr+'T12:00:00');
+  let start=new Date(source);
+  if(rule==='first-weekday-week'){
+    const day=start.getDay();
+    const mondayOffset=(day===0?-6:1-day);
+    start.setDate(start.getDate()+mondayOffset);
+  }else if(rule==='first-weekday-month'){
+    start=new Date(source.getFullYear(),source.getMonth(),1,12,0,0);
+  }else if(rule==='first-weekday-year'){
+    start=new Date(source.getFullYear(),0,1,12,0,0);
+  }
+  const target=Number(weekday);
+  const delta=(target-start.getDay()+7)%7;
+  start.setDate(start.getDate()+delta);
+  return dateKey(start);
+}
+function updateRecurrenceStartControls(){
+  const frequency=$('appointmentRecurrence')?.value||'none';
+  const rule=$('appointmentRecurrenceStartRule');
+  const weekday=$('appointmentRecurrenceWeekday');
+  const enabled=frequency!=='none' && !(rule?.disabled);
+  if(rule) rule.disabled=frequency==='none' || !!$('appointmentId')?.value;
+  if(weekday) weekday.disabled=frequency==='none' || rule?.value==='selected' || !!$('appointmentId')?.value;
+}
 function openAppointmentDialog(id='', date=''){
   ensurePlanData();
   if(view==='calendar') calendarDialogReturnState={view:'calendar',mode:calendarMode,cursor:new Date(calendarCursor)};
@@ -378,10 +404,19 @@ function openAppointmentDialog(id='', date=''){
   const recurrenceEnd=$('appointmentRecurrenceEnd');
   if(recurrenceSelect) recurrenceSelect.value=existing?.recurrence?.frequency||'none';
   if(recurrenceEnd) recurrenceEnd.value=existing?.recurrence?.endDate||'';
+  const recurrenceStartRule=$('appointmentRecurrenceStartRule');
+  const recurrenceWeekday=$('appointmentRecurrenceWeekday');
+  if(recurrenceStartRule) recurrenceStartRule.value=existing?.recurrence?.startRule||'selected';
+  if(recurrenceWeekday) recurrenceWeekday.value=String(existing?.recurrence?.weekday??1);
   if(recurrenceSelect) recurrenceSelect.disabled=!!existing;
   if(recurrenceEnd) recurrenceEnd.disabled=!!existing;
+  if(recurrenceStartRule) recurrenceStartRule.disabled=!!existing;
+  if(recurrenceWeekday) recurrenceWeekday.disabled=!!existing;
+  if(recurrenceSelect) recurrenceSelect.onchange=updateRecurrenceStartControls;
+  if(recurrenceStartRule) recurrenceStartRule.onchange=updateRecurrenceStartControls;
+  updateRecurrenceStartControls();
   const recurrenceHelp=$('appointmentRecurrenceHelp');
-  if(recurrenceHelp) recurrenceHelp.textContent=existing&&existing.recurrenceGroupId?'Cette occurrence appartient à une série. La modification concerne uniquement ce RDV.':'Pour une récurrence, choisis une date de fin.';
+  if(recurrenceHelp) recurrenceHelp.textContent=existing&&existing.recurrenceGroupId?'Cette occurrence appartient à une série. Tu peux supprimer ce RDV seul ou toute la série.':'Choisis éventuellement le premier lundi, mardi, mercredi… de la semaine, du mois ou de l’année contenant la date sélectionnée.';
   $('appointmentTitle').value=existing?.title||'';
   const doneBox=$('appointmentDone');
   if(doneBox) doneBox.checked=!!existing?.done;
@@ -409,10 +444,23 @@ function openAppointmentDialog(id='', date=''){
 }
 function deleteAppointment(id){
   const appt=appointments().find(a=>a.id===id);
-  if(!appt) return;
-  if(!confirm('Supprimer ce RDV ?')) return;
-  db.appointments=db.appointments.filter(a=>a.id!==id);
+  if(!appt) return false;
+  if(appt.recurrenceGroupId){
+    const deleteSeries=confirm('Ce RDV fait partie d’une série.\n\nOK = supprimer toute la série\nAnnuler = choisir de supprimer seulement ce RDV');
+    if(deleteSeries){
+      if(!confirm('Confirmer la suppression de tous les événements de cette série ?')) return false;
+      db.appointments=db.appointments.filter(a=>a.recurrenceGroupId!==appt.recurrenceGroupId);
+    }else{
+      if(!confirm('Supprimer uniquement ce RDV ?')) return false;
+      db.appointments=db.appointments.filter(a=>a.id!==id);
+    }
+  }else{
+    if(!confirm('Supprimer ce RDV ?')) return false;
+    db.appointments=db.appointments.filter(a=>a.id!==id);
+  }
+  save();
   render();
+  return true;
 }
 
 function allTasks(){return plan().buckets.flatMap(b=>b.tasks.map(t=>({...t,bucket:b}))) }
@@ -1116,9 +1164,12 @@ $('appointmentForm').onsubmit=e=>{
   const id=existingId||uid();
   const frequency=$('appointmentRecurrence')?.value||'none';
   const recurrenceEnd=$('appointmentRecurrenceEnd')?.value||'';
+  const startRule=$('appointmentRecurrenceStartRule')?.value||'selected';
+  const weekday=Number($('appointmentRecurrenceWeekday')?.value??1);
   const base={id,company:$('appointmentCompany').value.trim(),date:$('appointmentDate').value,time:$('appointmentTime').value,title:$('appointmentTitle').value.trim(),notes:$('appointmentNotes').value.trim(),done:!!($('appointmentDone')&&$('appointmentDone').checked),color:'violet',rdvActive:true,updatedAt:new Date().toISOString()};
   if(!base.company){ alert('Choisis une entreprise pour le RDV.'); return; }
   if(!base.date){ alert('Choisis une date pour le RDV.'); return; }
+  if(!existingId && frequency!=='none') base.date=recurrenceStartDate(base.date,startRule,weekday);
   if(!existingId && frequency!=='none' && !recurrenceEnd){ alert('Choisis une date de fin pour la récurrence.'); return; }
   if(!existingId && frequency!=='none' && recurrenceEnd<base.date){ alert('La date de fin de récurrence doit être après la date du premier RDV.'); return; }
 
@@ -1142,7 +1193,7 @@ $('appointmentForm').onsubmit=e=>{
       if(current.getTime()===before) break;
       guard++;
     }
-    dates.forEach((date,index)=>db.appointments.push({...base,id:index===0?id:uid(),date,recurrence:{frequency,endDate:recurrenceEnd},recurrenceGroupId:groupId,recurrenceIndex:index}));
+    dates.forEach((date,index)=>db.appointments.push({...base,id:index===0?id:uid(),date,recurrence:{frequency,endDate:recurrenceEnd,startRule,weekday},recurrenceGroupId:groupId,recurrenceIndex:index}));
   }
   $('appointmentDialog').close();
   if(calendarDialogReturnState){
@@ -1155,7 +1206,7 @@ $('appointmentForm').onsubmit=e=>{
   render();
 };
 $('cancelAppointmentDialog').onclick=()=>$('appointmentDialog').close();
-$('deleteAppointmentBtn').onclick=()=>{const id=$('appointmentId').value;if(id){deleteAppointment(id);$('appointmentDialog').close();}};
+$('deleteAppointmentBtn').onclick=()=>{const id=$('appointmentId').value;if(id&&deleteAppointment(id)) $('appointmentDialog').close();};
 document.addEventListener('click', (e)=>{
   const activity=e.target.closest('.inlineCompanyActivityBtn');
   if(activity){ e.preventDefault(); e.stopPropagation(); openCompanyActivity(activity.dataset.company||''); return; }
@@ -1255,7 +1306,7 @@ function preparePrintMode(mode){
   const doc = frame.contentWindow.document;
   const styleHref = 'style.css?v=20260706-1935-v65';
   doc.open();
-  doc.write(`<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>${esc(title)} - impression V66</title><link rel="stylesheet" href="${styleHref}"><style>
+  doc.write(`<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>${esc(title)} - impression V67</title><link rel="stylesheet" href="${styleHref}"><style>
     @page{size:A4 landscape;margin:6mm;}
     html,body{background:#fff!important;margin:0!important;padding:0!important;color:#111827!important;}
     body{font-family:Arial,Helvetica,sans-serif!important;}
@@ -1726,8 +1777,8 @@ if($('companyInfoForm')){
 
 // ---------------- GOOGLE DRIVE SYNC ----------------
 
-const VERSION_LABEL = 'V66';
-const BUILD_LABEL = 'build 20260706-1325-reconstruit-depuis-V59';
+const VERSION_LABEL = 'V67';
+const BUILD_LABEL = 'build 20260719-0930-recurrences-avancees';
 let driveConnectedForBanner = false;
 let lastSaveTimeForBanner = localStorage.getItem('mon-organiseur-last-save-time') || '--';
 let lastLocalSaveTimeForBanner = localStorage.getItem('mon-organiseur-last-local-save-time') || '--';

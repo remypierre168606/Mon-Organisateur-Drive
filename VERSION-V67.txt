@@ -1,0 +1,11 @@
+MON ORGANISEUR DRIVE — V67
+Build 20260719-0930
+
+Nouveautés :
+- Suppression en une fois de tous les événements appartenant à une même série récurrente.
+- Possibilité de supprimer uniquement l’occurrence ouverte.
+- Début d’une récurrence au premier lundi, mardi, mercredi, jeudi, vendredi, samedi ou dimanche :
+  • de la semaine contenant la date choisie ;
+  • du mois contenant la date choisie ;
+  • de l’année contenant la date choisie.
+- Conservation des corrections de calendrier et d’impression précédentes.
