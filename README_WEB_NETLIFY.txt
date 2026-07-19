@@ -1,6 +1,6 @@
-Mon Organiseur Drive V67 - Impression 1 page
+Mon Organiseur Drive V68 - Impression 1 page
 
-Corrections V67 :
+Corrections V68 :
 - Nouveau bouton 🖨 1 page pour compresser la vue courante sur une page A4 paysage quand c est possible.
 - Bouton 🖨 Taille réelle pour imprimer sans compression.
 - Bouton 🖨 A3 pour les grands tableaux.
@@ -53,4 +53,4 @@ V51.2 : ajout d'une petite poubelle visible en haut de chaque colonne avec doubl
 V51.3 : les titres de colonnes et de tâches passent automatiquement sur plusieurs lignes si nécessaire.
 
 
-V67 : impression isolée de la vue affichée uniquement, sans page parasite.
+V68 : impression isolée de la vue affichée uniquement, sans page parasite.

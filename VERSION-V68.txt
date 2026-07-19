@@ -1,0 +1,12 @@
+MON ORGANISEUR DRIVE — V68
+Build 20260719-1425
+
+STABILITÉ GOOGLE DRIVE
+- renouvellement silencieux du jeton avant expiration ;
+- reconnexion automatique après coupure Internet ou retour sur l’onglet ;
+- temporisation progressive en cas d’indisponibilité Google ;
+- sauvegarde locale permanente pendant toute coupure ;
+- synchronisation automatique des changements en attente après reconnexion ;
+- protection contre l’écrasement des changements locaux lors d’une reconnexion.
+
+Toutes les fonctions V67 sont conservées.

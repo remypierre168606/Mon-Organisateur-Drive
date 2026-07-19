@@ -1306,7 +1306,7 @@ function preparePrintMode(mode){
   const doc = frame.contentWindow.document;
   const styleHref = 'style.css?v=20260706-1935-v65';
   doc.open();
-  doc.write(`<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>${esc(title)} - impression V67</title><link rel="stylesheet" href="${styleHref}"><style>
+  doc.write(`<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>${esc(title)} - impression V68</title><link rel="stylesheet" href="${styleHref}"><style>
     @page{size:A4 landscape;margin:6mm;}
     html,body{background:#fff!important;margin:0!important;padding:0!important;color:#111827!important;}
     body{font-family:Arial,Helvetica,sans-serif!important;}
@@ -1777,14 +1777,21 @@ if($('companyInfoForm')){
 
 // ---------------- GOOGLE DRIVE SYNC ----------------
 
-const VERSION_LABEL = 'V67';
-const BUILD_LABEL = 'build 20260719-0930-recurrences-avancees';
+const VERSION_LABEL = 'V68';
+const BUILD_LABEL = 'build 20260719-1425-connexion-drive-stable';
 let driveConnectedForBanner = false;
 let lastSaveTimeForBanner = localStorage.getItem('mon-organiseur-last-save-time') || '--';
 let lastLocalSaveTimeForBanner = localStorage.getItem('mon-organiseur-last-local-save-time') || '--';
 let tokenExpiresAt = Number(localStorage.getItem('mon-organiseur-token-expires-at') || '0');
 let pendingDriveSync = localStorage.getItem('mon-organiseur-pending-sync') === '1';
 let driveHealthTimer = null;
+let driveReconnectTimer = null;
+let driveReconnectInProgress = false;
+let driveReconnectAttempts = 0;
+let googleLibrariesReady = false;
+const DRIVE_REFRESH_MARGIN_MS = 5 * 60 * 1000;
+const DRIVE_RECONNECT_BASE_MS = 15000;
+const DRIVE_RECONNECT_MAX_MS = 5 * 60 * 1000;
 
 function nowLabel(date=new Date()){
   return date.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
@@ -1925,29 +1932,97 @@ function updateWebOriginHelp(){
   const r=$('currentRedirectText'); if(r) r.textContent=currentRedirectUri();
 }
 async function waitForGoogleLibraries(){
-  for(let i=0;i<30 && (typeof gapi==='undefined');i++){
-    status('Chargement de Google Drive... '+(i+1));
+  if(googleLibrariesReady && typeof gapi!=='undefined' && gapi.client) return;
+  for(let i=0;i<40 && (typeof gapi==='undefined' || typeof google==='undefined');i++){
+    if(i===0) status('Chargement sécurisé de Google Drive...');
     await new Promise(r=>setTimeout(r,300));
   }
   if(typeof gapi==='undefined') throw new Error('Librairie Google API non chargée');
+  if(typeof google==='undefined' || !google.accounts?.oauth2) throw new Error('Google Identity Services non chargé');
   await new Promise((resolve,reject)=>{ try{ gapi.load('client',resolve); }catch(e){ reject(e); } });
   await gapi.client.init({discoveryDocs:[DRIVE_DISCOVERY]});
+  googleLibrariesReady=true;
+}
+
+function clearDriveReconnectTimer(){
+  if(driveReconnectTimer){ clearTimeout(driveReconnectTimer); driveReconnectTimer=null; }
+}
+function scheduleSilentDriveReconnect(delayMs){
+  if(!clientId() || navigator.onLine===false || driveReconnectInProgress) return;
+  clearDriveReconnectTimer();
+  const delay = Number.isFinite(delayMs) ? delayMs : Math.min(DRIVE_RECONNECT_MAX_MS, DRIVE_RECONNECT_BASE_MS * Math.max(1, 2 ** driveReconnectAttempts));
+  driveReconnectTimer=setTimeout(()=>refreshDriveTokenSilently('reconnexion automatique'), Math.max(1000, delay));
+}
+async function refreshDriveTokenSilently(reason='renouvellement automatique'){
+  if(driveReconnectInProgress || navigator.onLine===false || !clientId()) return false;
+  driveReconnectInProgress=true;
+  clearDriveReconnectTimer();
+  try{
+    await waitForGoogleLibraries();
+    return await new Promise((resolve)=>{
+      let settled=false;
+      const finish=(ok)=>{ if(settled) return; settled=true; driveReconnectInProgress=false; resolve(ok); };
+      tokenClient = google.accounts.oauth2.initTokenClient({
+        client_id: clientId(),
+        scope: DRIVE_SCOPE,
+        callback: async (resp)=>{
+          if(resp?.error || !resp?.access_token){
+            driveReconnectAttempts++;
+            status('Drive temporairement hors connexion. Les données restent sauvegardées localement.');
+            scheduleSilentDriveReconnect();
+            finish(false);
+            return;
+          }
+          try{
+            gapi.client.setToken({access_token:resp.access_token});
+            const expiresIn=Number(resp.expires_in||3600);
+            tokenExpiresAt=Date.now()+Math.max(120,expiresIn-30)*1000;
+            localStorage.setItem('mon-organiseur-token-expires-at',String(tokenExpiresAt));
+            driveReady=true;
+            driveReconnectAttempts=0;
+            setDriveBanner(true);
+            status('Drive connecté automatiquement.');
+            if(pendingDriveSync) await saveToDrive(true);
+            scheduleDriveAutosave();
+            finish(true);
+          }catch(e){
+            console.warn('Renouvellement Drive incomplet',e);
+            driveReconnectAttempts++;
+            driveReady=false; setDriveBanner(false); scheduleSilentDriveReconnect(); finish(false);
+          }
+        }
+      });
+      try{ tokenClient.requestAccessToken({prompt:''}); }
+      catch(e){ driveReconnectAttempts++; driveReconnectInProgress=false; scheduleSilentDriveReconnect(); resolve(false); }
+      setTimeout(()=>{ if(!settled){ driveReconnectAttempts++; driveReconnectInProgress=false; scheduleSilentDriveReconnect(); resolve(false); } },15000);
+    });
+  }catch(e){
+    console.warn('Reconnexion Drive impossible',e);
+    driveReconnectInProgress=false;
+    driveReconnectAttempts++;
+    scheduleSilentDriveReconnect();
+    return false;
+  }
 }
 async function finishOAuthRedirectIfNeeded(){ return false; }
 
 function startDriveHealthCheck(){
   if(driveHealthTimer) clearInterval(driveHealthTimer);
   driveHealthTimer=setInterval(async ()=>{
-    if(driveReady && !hasValidDriveToken()){
-      driveReady=false;
-      setDriveBanner(false);
-      status('Connexion Google Drive perdue. Sauvegarde locale OK, reconnecte Drive pour synchroniser.');
+    const token=getDriveToken();
+    const remaining=tokenExpiresAt-Date.now();
+    if(token?.access_token && remaining>0 && remaining<=DRIVE_REFRESH_MARGIN_MS){
+      await refreshDriveTokenSilently('renouvellement avant expiration');
       return;
     }
-    // V45 : si des modifications attendent et que Drive est disponible, on tente une synchronisation automatique.
-    if(driveReady && hasValidDriveToken() && pendingDriveSync){
-      await saveToDrive(true);
+    if(!hasValidDriveToken()){
+      driveReady=false;
+      setDriveBanner(false);
+      status('Drive en reconnexion automatique. Sauvegarde locale active.');
+      scheduleSilentDriveReconnect(1000);
+      return;
     }
+    if(driveReady && pendingDriveSync) await saveToDrive(true);
   }, 30000);
 }
 
@@ -1955,9 +2030,12 @@ async function ensureDriveUsable(silent=false){
   if(!driveReady || !hasValidDriveToken()){
     driveReady=false;
     setDriveBanner(false);
-    if(!silent) alert('Google Drive n’est plus connecté. Clique sur “Se connecter à Google Drive”.');
-    status('Connexion Google Drive perdue. Sauvegarde locale OK, reconnecte Drive pour synchroniser.');
-    return false;
+    const recovered=await refreshDriveTokenSilently('reconnexion à la demande');
+    if(!recovered){
+      if(!silent) alert('Google Drive est momentanément indisponible. Tes données sont conservées localement et la reconnexion automatique continue.');
+      status('Drive en reconnexion automatique. Sauvegarde locale OK.');
+      return false;
+    }
   }
   try{
     await gapi.client.drive.files.list({pageSize:1, fields:'files(id)'});
@@ -1967,8 +2045,9 @@ async function ensureDriveUsable(silent=false){
     console.error(e);
     driveReady=false;
     setDriveBanner(false);
-    if(!silent) alert('Google Drive a refusé la requête : '+explainError(e));
-    status('Connexion Google Drive perdue : '+explainError(e));
+    scheduleSilentDriveReconnect(2000);
+    if(!silent) alert('Google Drive a refusé la requête. La reconnexion automatique va être tentée.\n\n'+explainError(e));
+    status('Drive temporairement indisponible. Reconnexion automatique en cours.');
     return false;
   }
 }
@@ -2007,9 +2086,13 @@ async function connectDrive(){
           status('Drive connecté. Vérification...');
           const ok=await ensureDriveUsable(false);
           if(ok){
-            status('Drive connecté. Chargement de la sauvegarde...');
-            await loadFromDrive(true);
-            if(pendingDriveSync) await saveToDrive(true);
+            if(pendingDriveSync){
+              status('Drive reconnecté. Envoi des modifications locales...');
+              await saveToDrive(true);
+            }else{
+              status('Drive connecté. Chargement de la sauvegarde...');
+              await loadFromDrive(true);
+            }
             scheduleDriveAutosave();
           }
         }catch(e){
@@ -2022,7 +2105,7 @@ async function connectDrive(){
     });
 
     status('Ouverture de la fenêtre Google...');
-    tokenClient.requestAccessToken({prompt:'consent'});
+    tokenClient.requestAccessToken({prompt:'select_account'});
   }catch(e){
     console.error(e);
     driveReady=false; setDriveBanner(false);
@@ -2032,6 +2115,8 @@ async function connectDrive(){
 }
 
 function disconnectDrive(){
+  clearDriveReconnectTimer();
+  driveReconnectAttempts=0;
   const token=getDriveToken();
   if(token && typeof google!=='undefined' && google.accounts && google.accounts.oauth2) google.accounts.oauth2.revoke(token.access_token);
   if(typeof gapi!=='undefined' && gapi.client) gapi.client.setToken('');
@@ -2123,7 +2208,15 @@ window.addEventListener('beforeunload', ()=>{
   }
 });
 
-async function startApp(){ initDriveUi(); render(); await finishOAuthRedirectIfNeeded(); }
+window.addEventListener('online',()=>{ status('Internet revenu. Reconnexion Drive automatique...'); scheduleSilentDriveReconnect(500); });
+window.addEventListener('offline',()=>{ driveReady=false; setDriveBanner(false); status('Internet indisponible. Sauvegarde locale active.'); });
+document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState==='visible' && !hasValidDriveToken()) scheduleSilentDriveReconnect(500);
+});
+async function startApp(){
+  initDriveUi(); render(); await finishOAuthRedirectIfNeeded();
+  if(clientId()) scheduleSilentDriveReconnect(1200);
+}
 if(document.readyState==='loading'){ document.addEventListener('DOMContentLoaded', startApp); } else { startApp(); }
 
 
